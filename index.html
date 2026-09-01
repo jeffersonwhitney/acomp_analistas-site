@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Comercial - HTML</title>
     
-    <!-- Biblioteca PapaParse para ler os CSVs direto do Google Sheets -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <style>
@@ -111,7 +110,6 @@
 
     <div class="container">
         
-        <!-- Cabeçalho com Título e Botões -->
         <div class="cabecalho-container">
             <div class="espacador"></div>
             
@@ -127,17 +125,14 @@
             </div>
         </div>
         
-        <!-- Tabela -->
         <table class='tabela-equipe' id="tabela-dashboard">
             <thead id="cabecalho-tabela">
-                <!-- O cabeçalho será injetado pelo JavaScript -->
-            </thead>
+                </thead>
             <tbody id="corpo-tabela">
                 <tr><td colspan="22" style="text-align: center;">Buscando dados no servidor...</td></tr>
             </tbody>
             <tfoot id="rodape-tabela">
-                <!-- O rodapé será injetado pelo JavaScript -->
-            </tfoot>
+                </tfoot>
         </table>
     </div>
 
@@ -146,18 +141,43 @@
         const urlBase = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQySFFFFCw7rifwK1Ipj3-9yq8eljPL7Hn5RUFTpQgrFxraRqmz0ne52yqB41cHHhPzh1EhZj0Nxd_-/pub?gid=665822156&single=true&output=csv";
         const urlForms = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSdLALJKkM-j33amnh8heU_xsCvhuKGNjjtVbuMVxDnz-VPz1sB9q2kNALr8bee8iRmhPErv9LCgyxw/pub?output=csv";
 
-        // 2. Chave Mestra do DAX
-        const vOcultarSemana1 = true;
-        const vDivisorSemanas = vOcultarSemana1 ? 3 : 4;
-        const vCSS_Ocultar = vOcultarSemana1 ? "display: none;" : "";
-        const vCSS_BordaSem2 = vOcultarSemana1 ? "border-left: 1px solid #ddd;" : "";
-        const vCSS_BordaRodapeSem2 = vOcultarSemana1 ? "border-left: 2px solid #558bb5;" : "";
-
         // Nomes dos Relatórios
         const rel1 = "Atualização dos PEX";
         const rel2 = "Atualização das campanhas";
         const rel3 = "Padronização das metas para o app";
         const rel4 = "Demais acompanhamentos";
+
+        // Auxiliar para formatação de números inteiros/decimais
+        function formatNum(valor) {
+            if (valor === undefined || valor === null || isNaN(valor)) return 0;
+            return (valor % 1 !== 0) ? valor.toFixed(1) : valor;
+        }
+
+        function formatarPerc(valor, total) {
+            if (!total || total === 0) return "-";
+            return Math.round((valor / total) * 100) + "%";
+        }
+
+        // Converte string 'DD/MM/YYYY HH:MM:SS' para objeto Date
+        function parseDataHora(dataStr) {
+            if (!dataStr) return null;
+            const partes = dataStr.trim().split(" ");
+            const dataPartes = partes[0].split(/[\/-]/);
+            if (dataPartes.length < 3) return null;
+            const dia = parseInt(dataPartes[0], 10);
+            const mes = parseInt(dataPartes[1], 10) - 1; // Mês no JS é 0-11
+            const ano = parseInt(dataPartes[2], 10);
+            return new Date(ano, mes, dia);
+        }
+
+        // Calcula a semana do mês pelo calendário real (Segunda a Domingo)
+        function getSemanaDoMes(data) {
+            const primeiroDia = new Date(data.getFullYear(), data.getMonth(), 1);
+            const diaDaSemanaInicio = (primeiroDia.getDay() + 6) % 7; // Segunda = 0, Domingo = 6
+            const offset = data.getDate() + diaDaSemanaInicio - 1;
+            const numSemana = Math.floor(offset / 7) + 1;
+            return Math.min(numSemana, 5); // Limita em até 5 semanas
+        }
 
         async function carregarDados() {
             try {
@@ -181,15 +201,19 @@
             }
         }
 
-        function formatarPerc(valor, total) {
-            if (total === 0) return "-";
-            return Math.round((valor / total) * 100) + "%";
-        }
-
         function processarDados(baseArray, formsArray) {
-            // Filtrar cabeçalho se houver na Base
+            // Filtrar cabeçalho da Base
             const base = baseArray.filter(r => r[0] && r[0].toLowerCase() !== 'nome');
-            const forms = formsArray;
+            
+            // Filtrar respostas do Forms apenas para o MÊS e ANO VIGENTES
+            const agora = new Date();
+            const mesVigente = agora.getMonth();
+            const anoVigente = agora.getFullYear();
+
+            const forms = formsArray.filter(f => {
+                const d = parseDataHora(f["Carimbo de data/hora"]);
+                return d && d.getMonth() === mesVigente && d.getFullYear() === anoVigente;
+            });
 
             // Extrair lista única de analistas ordenados
             const analistas = [...new Set(base.map(r => r[0]))].sort();
@@ -200,89 +224,99 @@
             let tReal = 0, tEsp = 0;
             let tRealT1 = 0, tEspT1 = 0, tRealT2 = 0, tEspT2 = 0;
             let tRealT3 = 0, tEspT3 = 0, tRealT4 = 0, tEspT4 = 0;
-            let tSem1 = 0, tSem2 = 0, tSem3 = 0, tSem4 = 0;
+            
+            let tSem1 = 0, tSem2 = 0, tSem3 = 0, tSem4 = 0, tSem5 = 0;
+            let tEspSem1 = 0, tEspSem2 = 0, tEspSem3 = 0, tEspSem4 = 0, tEspSem5 = 0;
 
             analistas.forEach(nome => {
                 let baseA = base.filter(r => r[0] === nome);
                 let formsA = forms.filter(r => r["Nome"] === nome);
 
-                // Esperado Total (Coluna 6 = índice 6)
-                let vEsperadoTotal = baseA.reduce((sum, r) => sum + (parseInt(r[6]) || 0), 0);
+                // Esperado Total (Coluna G = índice 6)
+                let vEsperadoTotal = baseA.reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
                 let vRealizadoTotal = formsA.length;
                 
                 tEsp += vEsperadoTotal;
                 tReal += vRealizadoTotal;
 
                 // T1 a T4
-                let vEspT1 = baseA.filter(r => parseInt(r[1]) === 1).reduce((sum, r) => sum + (parseInt(r[6]) || 0), 0);
+                let vEspT1 = baseA.filter(r => parseInt(r[1]) === 1).reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
                 let vRealT1 = formsA.filter(r => r["Relatório"] === rel1).length;
                 tEspT1 += vEspT1; tRealT1 += vRealT1;
 
-                let vEspT2 = baseA.filter(r => parseInt(r[1]) === 2).reduce((sum, r) => sum + (parseInt(r[6]) || 0), 0);
+                let vEspT2 = baseA.filter(r => parseInt(r[1]) === 2).reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
                 let vRealT2 = formsA.filter(r => r["Relatório"] === rel2).length;
                 tEspT2 += vEspT2; tRealT2 += vRealT2;
 
-                let vEspT3 = baseA.filter(r => parseInt(r[1]) === 3).reduce((sum, r) => sum + (parseInt(r[6]) || 0), 0);
+                let vEspT3 = baseA.filter(r => parseInt(r[1]) === 3).reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
                 let vRealT3 = formsA.filter(r => r["Relatório"] === rel3).length;
                 tEspT3 += vEspT3; tRealT3 += vRealT3;
 
-                let vEspT4 = baseA.filter(r => parseInt(r[1]) === 4).reduce((sum, r) => sum + (parseInt(r[6]) || 0), 0);
+                let vEspT4 = baseA.filter(r => parseInt(r[1]) === 4).reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
                 let vRealT4 = formsA.filter(r => r["Relatório"] === rel4).length;
                 tEspT4 += vEspT4; tRealT4 += vRealT4;
 
-                // Semanas
-                let vNumEspSemana = vEsperadoTotal / vDivisorSemanas;
-                let vEspSemana = (vNumEspSemana % 1 !== 0) ? vNumEspSemana.toFixed(1) : vNumEspSemana;
+                // Metas Exatas das Semanas 1 a 5 (Colunas H a L = Índices 7 a 11)
+                let vEspSem1 = baseA.reduce((sum, r) => sum + (parseFloat(r[7]) || 0), 0);
+                let vEspSem2 = baseA.reduce((sum, r) => sum + (parseFloat(r[8]) || 0), 0);
+                let vEspSem3 = baseA.reduce((sum, r) => sum + (parseFloat(r[9]) || 0), 0);
+                let vEspSem4 = baseA.reduce((sum, r) => sum + (parseFloat(r[10]) || 0), 0);
+                let vEspSem5 = baseA.reduce((sum, r) => sum + (parseFloat(r[11]) || 0), 0);
 
-                let vRealSem1 = 0, vRealSem2 = 0, vRealSem3 = 0, vRealSem4 = 0;
+                tEspSem1 += vEspSem1; tEspSem2 += vEspSem2; tEspSem3 += vEspSem3;
+                tEspSem4 += vEspSem4; tEspSem5 += vEspSem5;
+
+                // Contagem de Envios Realizados por Semana (Calendário Real)
+                let vRealSem1 = 0, vRealSem2 = 0, vRealSem3 = 0, vRealSem4 = 0, vRealSem5 = 0;
 
                 formsA.forEach(f => {
-                    let dataStr = f["Carimbo de data/hora"];
-                    if(dataStr) {
-                        let dia = parseInt(dataStr.split(/[\/-]/)[0]); 
-                        if (dia >= 1 && dia <= 7) vRealSem1++;
-                        else if (dia >= 8 && dia <= 14) vRealSem2++;
-                        else if (dia >= 15 && dia <= 21) vRealSem3++;
-                        else if (dia >= 22) vRealSem4++;
+                    let d = parseDataHora(f["Carimbo de data/hora"]);
+                    if (d) {
+                        let numSemana = getSemanaDoMes(d);
+                        if (numSemana === 1) vRealSem1++;
+                        else if (numSemana === 2) vRealSem2++;
+                        else if (numSemana === 3) vRealSem3++;
+                        else if (numSemana === 4) vRealSem4++;
+                        else if (numSemana === 5) vRealSem5++;
                     }
                 });
 
-                tSem1 += vRealSem1; tSem2 += vRealSem2; tSem3 += vRealSem3; tSem4 += vRealSem4;
-                let vTotalSemanas = vRealSem1 + vRealSem2 + vRealSem3 + vRealSem4;
+                tSem1 += vRealSem1; tSem2 += vRealSem2; tSem3 += vRealSem3;
+                tSem4 += vRealSem4; tSem5 += vRealSem5;
 
                 corpoHTML += `
                 <tr style='text-align: center; border-bottom: 1px solid #ddd; height: 40px;'>
                     <td style='padding: 8px; text-align: left;'><b>${nome}</b></td>
                     <td style='padding: 8px; font-weight: bold; color: #004578;'>${vRealizadoTotal}</td>
-                    <td style='padding: 8px; font-weight: bold; color: #777;'>${vEsperadoTotal}</td>
+                    <td style='padding: 8px; font-weight: bold; color: #777;'>${formatNum(vEsperadoTotal)}</td>
                     <td class='td-perc'>${formatarPerc(vRealizadoTotal, vEsperadoTotal)}</td>
                     
-                    <td style='padding: 8px;'>${vRealT1} / ${vEspT1}</td>
+                    <td style='padding: 8px;'>${vRealT1} / ${formatNum(vEspT1)}</td>
                     <td class='td-perc'>${formatarPerc(vRealT1, vEspT1)}</td>
                     
-                    <td style='padding: 8px;'>${vRealT2} / ${vEspT2}</td>
+                    <td style='padding: 8px;'>${vRealT2} / ${formatNum(vEspT2)}</td>
                     <td class='td-perc'>${formatarPerc(vRealT2, vEspT2)}</td>
                     
-                    <td style='padding: 8px;'>${vRealT3} / ${vEspT3}</td>
+                    <td style='padding: 8px;'>${vRealT3} / ${formatNum(vEspT3)}</td>
                     <td class='td-perc'>${formatarPerc(vRealT3, vEspT3)}</td>
                     
-                    <td style='padding: 8px;'>${vRealT4} / ${vEspT4}</td>
+                    <td style='padding: 8px;'>${vRealT4} / ${formatNum(vEspT4)}</td>
                     <td class='td-perc'>${formatarPerc(vRealT4, vEspT4)}</td>
                     
-                    <td style='padding: 8px; border-left: 2px solid #ddd; ${vCSS_Ocultar}'>${vRealSem1} / ${vEspSemana}</td>
-                    <td class='td-perc' style='${vCSS_Ocultar}'>${formatarPerc(vRealSem1, vNumEspSemana)}</td>
+                    <td style='padding: 8px; border-left: 2px solid #ddd;'>${vRealSem1} / ${formatNum(vEspSem1)}</td>
+                    <td class='td-perc'>${formatarPerc(vRealSem1, vEspSem1)}</td>
                     
-                    <td style='padding: 8px; ${vCSS_BordaSem2}'>${vRealSem2} / ${vEspSemana}</td>
-                    <td class='td-perc'>${formatarPerc(vRealSem2, vNumEspSemana)}</td>
+                    <td style='padding: 8px;'>${vRealSem2} / ${formatNum(vEspSem2)}</td>
+                    <td class='td-perc'>${formatarPerc(vRealSem2, vEspSem2)}</td>
                     
-                    <td style='padding: 8px;'>${vRealSem3} / ${vEspSemana}</td>
-                    <td class='td-perc'>${formatarPerc(vRealSem3, vNumEspSemana)}</td>
+                    <td style='padding: 8px;'>${vRealSem3} / ${formatNum(vEspSem3)}</td>
+                    <td class='td-perc'>${formatarPerc(vRealSem3, vEspSem3)}</td>
                     
-                    <td style='padding: 8px;'>${vRealSem4} / ${vEspSemana}</td>
-                    <td class='td-perc'>${formatarPerc(vRealSem4, vNumEspSemana)}</td>
+                    <td style='padding: 8px;'>${vRealSem4} / ${formatNum(vEspSem4)}</td>
+                    <td class='td-perc'>${formatarPerc(vRealSem4, vEspSem4)}</td>
                     
-                    <td style='padding: 8px; font-weight: bold; border-left: 2px solid #ddd;'>${vTotalSemanas}</td>
-                    <td class='td-perc' style='font-weight: bold;'>${formatarPerc(vTotalSemanas, vEsperadoTotal)}</td>
+                    <td style='padding: 8px;'>${vRealSem5} / ${formatNum(vEspSem5)}</td>
+                    <td class='td-perc'>${formatarPerc(vRealSem5, vEspSem5)}</td>
                 </tr>`;
             });
 
@@ -301,56 +335,52 @@
                     <th class='th-perc'>%</th>
                     <th style='padding: 8px; border: 1px solid #ddd;'>${rel4}</th>
                     <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd; ${vCSS_Ocultar}'>Sem 1</th>
-                    <th class='th-perc' style='${vCSS_Ocultar}'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd; ${vCSS_BordaSem2}'>Sem 2</th>
+                    <th style='padding: 8px; border: 1px solid #ddd; border-left: 2px solid #ddd;'>Sem 1</th>
+                    <th class='th-perc'>%</th>
+                    <th style='padding: 8px; border: 1px solid #ddd;'>Sem 2</th>
                     <th class='th-perc'>%</th>
                     <th style='padding: 8px; border: 1px solid #ddd;'>Sem 3</th>
                     <th class='th-perc'>%</th>
                     <th style='padding: 8px; border: 1px solid #ddd;'>Sem 4</th>
                     <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd; background-color: #00335a;'>Total Mês</th>
+                    <th style='padding: 8px; border: 1px solid #ddd;'>Sem 5</th>
                     <th class='th-perc'>%</th>
                 </tr>`;
 
             // Montagem do Rodapé
-            let tNumEspSemana = tEsp / vDivisorSemanas;
-            let tEspSemana = (tNumEspSemana % 1 !== 0) ? tNumEspSemana.toFixed(1) : tNumEspSemana;
-            let tTotalSemanas = tSem1 + tSem2 + tSem3 + tSem4;
-
             const rodapeHTML = `
                 <tr style='background-color: #004578; color: white; text-align: center; height: 35px; font-weight: bold;'>
                     <td style='padding: 8px; text-align: left;'>TOTAL GERAL</td>
                     <td style='padding: 8px;'>${tReal}</td>
-                    <td style='padding: 8px;'>${tEsp}</td>
+                    <td style='padding: 8px;'>${formatNum(tEsp)}</td>
                     <td class='rodape-perc'>${formatarPerc(tReal, tEsp)}</td>
                     
-                    <td style='padding: 8px;'>${tRealT1} / ${tEspT1}</td>
+                    <td style='padding: 8px;'>${tRealT1} / ${formatNum(tEspT1)}</td>
                     <td class='rodape-perc'>${formatarPerc(tRealT1, tEspT1)}</td>
                     
-                    <td style='padding: 8px;'>${tRealT2} / ${tEspT2}</td>
+                    <td style='padding: 8px;'>${tRealT2} / ${formatNum(tEspT2)}</td>
                     <td class='rodape-perc'>${formatarPerc(tRealT2, tEspT2)}</td>
                     
-                    <td style='padding: 8px;'>${tRealT3} / ${tEspT3}</td>
+                    <td style='padding: 8px;'>${tRealT3} / ${formatNum(tEspT3)}</td>
                     <td class='rodape-perc'>${formatarPerc(tRealT3, tEspT3)}</td>
                     
-                    <td style='padding: 8px;'>${tRealT4} / ${tEspT4}</td>
+                    <td style='padding: 8px;'>${tRealT4} / ${formatNum(tEspT4)}</td>
                     <td class='rodape-perc'>${formatarPerc(tRealT4, tEspT4)}</td>
                     
-                    <td style='padding: 8px; border-left: 2px solid #558bb5; ${vCSS_Ocultar}'>${tSem1} / ${tEspSemana}</td>
-                    <td class='rodape-perc' style='${vCSS_Ocultar}'>${formatarPerc(tSem1, tNumEspSemana)}</td>
+                    <td style='padding: 8px; border-left: 2px solid #558bb5;'>${tSem1} / ${formatNum(tEspSem1)}</td>
+                    <td class='rodape-perc'>${formatarPerc(tSem1, tEspSem1)}</td>
                     
-                    <td style='padding: 8px; ${vCSS_BordaRodapeSem2}'>${tSem2} / ${tEspSemana}</td>
-                    <td class='rodape-perc'>${formatarPerc(tSem2, tNumEspSemana)}</td>
+                    <td style='padding: 8px;'>${tSem2} / ${formatNum(tEspSem2)}</td>
+                    <td class='rodape-perc'>${formatarPerc(tSem2, tEspSem2)}</td>
                     
-                    <td style='padding: 8px;'>${tSem3} / ${tEspSemana}</td>
-                    <td class='rodape-perc'>${formatarPerc(tSem3, tNumEspSemana)}</td>
+                    <td style='padding: 8px;'>${tSem3} / ${formatNum(tEspSem3)}</td>
+                    <td class='rodape-perc'>${formatarPerc(tSem3, tEspSem3)}</td>
                     
-                    <td style='padding: 8px;'>${tSem4} / ${tEspSemana}</td>
-                    <td class='rodape-perc'>${formatarPerc(tSem4, tNumEspSemana)}</td>
+                    <td style='padding: 8px;'>${tSem4} / ${formatNum(tEspSem4)}</td>
+                    <td class='rodape-perc'>${formatarPerc(tSem4, tEspSem4)}</td>
                     
-                    <td style='padding: 8px; background-color: #00335a; border-left: 2px solid #558bb5;'>${tTotalSemanas}</td>
-                    <td class='rodape-perc' style='background-color: #00223d;'>${formatarPerc(tTotalSemanas, tEsp)}</td>
+                    <td style='padding: 8px;'>${tSem5} / ${formatNum(tEspSem5)}</td>
+                    <td class='rodape-perc'>${formatarPerc(tSem5, tEspSem5)}</td>
                 </tr>`;
 
             // Injetando no HTML
