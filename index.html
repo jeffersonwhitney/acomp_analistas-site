@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Comercial - HTML</title>
+    
+    <!-- Biblioteca PapaParse para ler os CSVs direto do Google Sheets -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <style>
+        body { 
+            background-color: #f4f7f6; 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            padding: 20px; 
+            margin: 0;
+        }
+        .container {
+            background-color: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+            overflow-x: auto;
+        }
+        
+        /* --- ESTILOS DO CABEÇALHO E BOTÕES --- */
+        .cabecalho-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .espacador {
+            flex: 1;
+        }
+        .titulo-container {
+            flex: 2;
+            text-align: center;
+        }
+        .botoes-container {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .btn-acao {
+            background-color: #004578;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: bold;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .btn-acao:hover {
+            background-color: #00223d;
+        }
+
+        /* --- ESTILOS DA TABELA --- */
+        .tabela-equipe { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 13px; 
+        }
+        .tabela-equipe thead tr { 
+            background-color: #004578; 
+            color: white; 
+            text-align: center; 
+            height: 35px; 
+        }
+        .tabela-equipe th, .tabela-equipe td { 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+        }
+        .tabela-equipe tbody tr:nth-child(even) { background-color: #f0f4f8; }
+        .tabela-equipe tbody tr:nth-child(odd) { background-color: #ffffff; }
+        .tabela-equipe tbody tr:hover { background-color: #e2e8f0; } 
+        
+        .th-perc { 
+            width: 35px; 
+            padding: 4px; 
+            font-size: 11px; 
+            font-weight: normal; 
+            background-color: #00335a; 
+            border: 1px solid #ddd; 
+        }
+        .td-perc { 
+            padding: 4px; 
+            font-size: 11px; 
+            font-weight: bold; 
+            color: #666; 
+            text-align: center; 
+            border-right: 1px solid #ddd; 
+            background-color: rgba(0,0,0,0.03); 
+        }
+        .rodape-perc { 
+            padding: 4px; 
+            font-size: 11px; 
+            color: #fff; 
+            background-color: #00223d; 
+            text-align: center; 
+            border-right: 1px solid #558bb5; 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Cabeçalho com Título e Botões -->
+        <div class="cabecalho-container">
+            <div class="espacador"></div>
+            
+            <div class="titulo-container">
+                <h2 style='color: #004578; margin-bottom: 5px; margin-top: 0;'>Acompanhamento de Envios - Equipe Comercial</h2>
+                <p id="texto-atualizacao" style='color: #666; font-size: 12px; margin: 0;'>Atualizando base de dados...</p>
+            </div>
+            
+            <div class="botoes-container">
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSfvCfAliGnPFb7hqlgR9oaJDVfrEj_XGAmBVAqDYcAreVxkaA/viewform" target="_blank" class="btn-acao">Formulário</a>
+                <a href="https://docs.google.com/spreadsheets/d/1wWKfaet9v-AtWNdohBTjjucmSryE0kHPZjc3vvRFerU/edit?gid=607242638#gid=607242638" target="_blank" class="btn-acao">Histórico</a>
+                <a href="https://docs.google.com/spreadsheets/d/1qO5aeaxKvcFMvLQ327yJDeuzaMFmJ4znMWNizvm3aO4/edit?gid=665822156#gid=665822156" target="_blank" class="btn-acao">Base</a>
+            </div>
+        </div>
+        
+        <!-- Tabela -->
+        <table class='tabela-equipe' id="tabela-dashboard">
+            <thead id="cabecalho-tabela">
+                <!-- O cabeçalho será injetado pelo JavaScript -->
+            </thead>
+            <tbody id="corpo-tabela">
+                <tr><td colspan="22" style="text-align: center;">Buscando dados no servidor...</td></tr>
+            </tbody>
+            <tfoot id="rodape-tabela">
+                <!-- O rodapé será injetado pelo JavaScript -->
+            </tfoot>
+        </table>
+    </div>
+
+    <script>
+        // 1. Links de origem
+        const urlBase = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQySFFFFCw7rifwK1Ipj3-9yq8eljPL7Hn5RUFTpQgrFxraRqmz0ne52yqB41cHHhPzh1EhZj0Nxd_-/pub?gid=665822156&single=true&output=csv";
+        const urlForms = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSdLALJKkM-j33amnh8heU_xsCvhuKGNjjtVbuMVxDnz-VPz1sB9q2kNALr8bee8iRmhPErv9LCgyxw/pub?output=csv";
+
+        // 2. Chave Mestra do DAX
+        const vOcultarSemana1 = true;
+        const vDivisorSemanas = vOcultarSemana1 ? 3 : 4;
+        const vCSS_Ocultar = vOcultarSemana1 ? "display: none;" : "";
+        const vCSS_BordaSem2 = vOcultarSemana1 ? "border-left: 1px solid #ddd;" : "";
+        const vCSS_BordaRodapeSem2 = vOcultarSemana1 ? "border-left: 2px solid #558bb5;" : "";
+
+        // Nomes dos Relatórios
+        const rel1 = "Atualização dos PEX";
+        const rel2 = "Atualização das campanhas";
+        const rel3 = "Padronização das metas para o app";
+        const rel4 = "Demais acompanhamentos";
+
+        async function carregarDados() {
+            try {
+                const reqBase = new Promise(resolve => Papa.parse(urlBase, { download: true, header: false, skipEmptyLines: true, complete: resolve }));
+                const reqForms = new Promise(resolve => Papa.parse(urlForms, { download: true, header: true, skipEmptyLines: true, complete: resolve }));
+                
+                const [resBase, resForms] = await Promise.all([reqBase, reqForms]);
+                processarDados(resBase.data, resForms.data);
+                
+                // Atualiza o relógio na tela
+                const agora = new Date();
+                const dataFormatada = agora.toLocaleDateString('pt-BR');
+                const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById("texto-atualizacao").innerText = `Última atualização: ${dataFormatada} às ${horaFormatada} - Próxima em 30 min`;
+                document.getElementById("texto-atualizacao").style.color = "#666";
+
+            } catch (error) {
+                console.error("Erro:", error);
+                document.getElementById("texto-atualizacao").innerText = "Falha ao atualizar dados. Tentando novamente no próximo ciclo.";
+                document.getElementById("texto-atualizacao").style.color = "red";
+            }
+        }
+
+        function formatarPerc(valor, total) {
+            if (total === 0) return "-";
+            return Math.round((valor / total) * 100) + "%";
+        }
+
+        function processarDados(baseArray, formsArray) {
+            // Filtrar cabeçalho se houver na Base
+            const base = baseArray.filter(r => r[0] && r[0].toLowerCase() !== 'nome');
+            const forms = formsArray;
+
+            // Extrair lista única de analistas ordenados
+            const analistas = [...new Set(base.map(r => r[0]))].sort();
+
+            let corpoHTML = "";
+            
+            // Variáveis de Totais Gerais
+            let tReal = 0, tEsp = 0;
+            let tRealT1 = 0, tEspT1 = 0, tRealT2 = 0, tEspT2 = 0;
+            let tRealT3 = 0, tEspT3 = 0, tRealT4 = 0, tEspT4 = 0;
+            let tSem1 = 0, tSem2 = 0, tSem3 = 0, tSem4 = 0;
+
+            analistas.forEach(nome => {
+                let baseA = base.filter(r => r[0] === nome);
+                let formsA = forms.filter(r => r["Nome"] === nome);
+
+                // Esperado Total (Coluna 6 = índice 6)
+                let vEsperadoTotal = baseA.reduce((sum, r) => sum + (parseInt(r[6]) || 0), 0);
+                let vRealizadoTotal = formsA.length;
+                
+                tEsp += vEsperadoTotal;
+                tReal += vRealizadoTotal;
+
+                // T1 a T4
+                let vEspT1 = baseA.filter(r => parseInt(r[1]) === 1).reduce((sum, r) => sum + (parseInt(r[6]) || 0), 0);
+                let vRealT1 = formsA.filter(r => r["Relatório"] === rel1).length;
+                tEspT1 += vEspT1; tRealT1 += vRealT1;
+
+                let vEspT2 = baseA.filter(r => parseInt(r[1]) === 2).reduce((sum, r) => sum + (parseInt(r[6]) || 0), 0);
+                let vRealT2 = formsA.filter(r => r["Relatório"] === rel2).length;
+                tEspT2 += vEspT2; tRealT2 += vRealT2;
+
+                let vEspT3 = baseA.filter(r => parseInt(r[1]) === 3).reduce((sum, r) => sum + (parseInt(r[6]) || 0), 0);
+                let vRealT3 = formsA.filter(r => r["Relatório"] === rel3).length;
+                tEspT3 += vEspT3; tRealT3 += vRealT3;
+
+                let vEspT4 = baseA.filter(r => parseInt(r[1]) === 4).reduce((sum, r) => sum + (parseInt(r[6]) || 0), 0);
+                let vRealT4 = formsA.filter(r => r["Relatório"] === rel4).length;
+                tEspT4 += vEspT4; tRealT4 += vRealT4;
+
+                // Semanas
+                let vNumEspSemana = vEsperadoTotal / vDivisorSemanas;
+                let vEspSemana = (vNumEspSemana % 1 !== 0) ? vNumEspSemana.toFixed(1) : vNumEspSemana;
+
+                let vRealSem1 = 0, vRealSem2 = 0, vRealSem3 = 0, vRealSem4 = 0;
+
+                formsA.forEach(f => {
+                    let dataStr = f["Carimbo de data/hora"];
+                    if(dataStr) {
+                        let dia = parseInt(dataStr.split(/[\/-]/)[0]); 
+                        if (dia >= 1 && dia <= 7) vRealSem1++;
+                        else if (dia >= 8 && dia <= 14) vRealSem2++;
+                        else if (dia >= 15 && dia <= 21) vRealSem3++;
+                        else if (dia >= 22) vRealSem4++;
+                    }
+                });
+
+                tSem1 += vRealSem1; tSem2 += vRealSem2; tSem3 += vRealSem3; tSem4 += vRealSem4;
+                let vTotalSemanas = vRealSem1 + vRealSem2 + vRealSem3 + vRealSem4;
+
+                corpoHTML += `
+                <tr style='text-align: center; border-bottom: 1px solid #ddd; height: 40px;'>
+                    <td style='padding: 8px; text-align: left;'><b>${nome}</b></td>
+                    <td style='padding: 8px; font-weight: bold; color: #004578;'>${vRealizadoTotal}</td>
+                    <td style='padding: 8px; font-weight: bold; color: #777;'>${vEsperadoTotal}</td>
+                    <td class='td-perc'>${formatarPerc(vRealizadoTotal, vEsperadoTotal)}</td>
+                    
+                    <td style='padding: 8px;'>${vRealT1} / ${vEspT1}</td>
+                    <td class='td-perc'>${formatarPerc(vRealT1, vEspT1)}</td>
+                    
+                    <td style='padding: 8px;'>${vRealT2} / ${vEspT2}</td>
+                    <td class='td-perc'>${formatarPerc(vRealT2, vEspT2)}</td>
+                    
+                    <td style='padding: 8px;'>${vRealT3} / ${vEspT3}</td>
+                    <td class='td-perc'>${formatarPerc(vRealT3, vEspT3)}</td>
+                    
+                    <td style='padding: 8px;'>${vRealT4} / ${vEspT4}</td>
+                    <td class='td-perc'>${formatarPerc(vRealT4, vEspT4)}</td>
+                    
+                    <td style='padding: 8px; border-left: 2px solid #ddd; ${vCSS_Ocultar}'>${vRealSem1} / ${vEspSemana}</td>
+                    <td class='td-perc' style='${vCSS_Ocultar}'>${formatarPerc(vRealSem1, vNumEspSemana)}</td>
+                    
+                    <td style='padding: 8px; ${vCSS_BordaSem2}'>${vRealSem2} / ${vEspSemana}</td>
+                    <td class='td-perc'>${formatarPerc(vRealSem2, vNumEspSemana)}</td>
+                    
+                    <td style='padding: 8px;'>${vRealSem3} / ${vEspSemana}</td>
+                    <td class='td-perc'>${formatarPerc(vRealSem3, vNumEspSemana)}</td>
+                    
+                    <td style='padding: 8px;'>${vRealSem4} / ${vEspSemana}</td>
+                    <td class='td-perc'>${formatarPerc(vRealSem4, vNumEspSemana)}</td>
+                    
+                    <td style='padding: 8px; font-weight: bold; border-left: 2px solid #ddd;'>${vTotalSemanas}</td>
+                    <td class='td-perc' style='font-weight: bold;'>${formatarPerc(vTotalSemanas, vEsperadoTotal)}</td>
+                </tr>`;
+            });
+
+            // Montagem do Cabeçalho
+            const cabecalhoHTML = `
+                <tr>
+                    <th style='padding: 8px; border: 1px solid #ddd; text-align: left;'>Analista</th>
+                    <th style='padding: 8px; border: 1px solid #ddd;'>Real</th>
+                    <th style='padding: 8px; border: 1px solid #ddd;'>Meta</th>
+                    <th class='th-perc'>%</th>
+                    <th style='padding: 8px; border: 1px solid #ddd;'>${rel1}</th>
+                    <th class='th-perc'>%</th>
+                    <th style='padding: 8px; border: 1px solid #ddd;'>${rel2}</th>
+                    <th class='th-perc'>%</th>
+                    <th style='padding: 8px; border: 1px solid #ddd;'>${rel3}</th>
+                    <th class='th-perc'>%</th>
+                    <th style='padding: 8px; border: 1px solid #ddd;'>${rel4}</th>
+                    <th class='th-perc'>%</th>
+                    <th style='padding: 8px; border: 1px solid #ddd; ${vCSS_Ocultar}'>Sem 1</th>
+                    <th class='th-perc' style='${vCSS_Ocultar}'>%</th>
+                    <th style='padding: 8px; border: 1px solid #ddd; ${vCSS_BordaSem2}'>Sem 2</th>
+                    <th class='th-perc'>%</th>
+                    <th style='padding: 8px; border: 1px solid #ddd;'>Sem 3</th>
+                    <th class='th-perc'>%</th>
+                    <th style='padding: 8px; border: 1px solid #ddd;'>Sem 4</th>
+                    <th class='th-perc'>%</th>
+                    <th style='padding: 8px; border: 1px solid #ddd; background-color: #00335a;'>Total Mês</th>
+                    <th class='th-perc'>%</th>
+                </tr>`;
+
+            // Montagem do Rodapé
+            let tNumEspSemana = tEsp / vDivisorSemanas;
+            let tEspSemana = (tNumEspSemana % 1 !== 0) ? tNumEspSemana.toFixed(1) : tNumEspSemana;
+            let tTotalSemanas = tSem1 + tSem2 + tSem3 + tSem4;
+
+            const rodapeHTML = `
+                <tr style='background-color: #004578; color: white; text-align: center; height: 35px; font-weight: bold;'>
+                    <td style='padding: 8px; text-align: left;'>TOTAL GERAL</td>
+                    <td style='padding: 8px;'>${tReal}</td>
+                    <td style='padding: 8px;'>${tEsp}</td>
+                    <td class='rodape-perc'>${formatarPerc(tReal, tEsp)}</td>
+                    
+                    <td style='padding: 8px;'>${tRealT1} / ${tEspT1}</td>
+                    <td class='rodape-perc'>${formatarPerc(tRealT1, tEspT1)}</td>
+                    
+                    <td style='padding: 8px;'>${tRealT2} / ${tEspT2}</td>
+                    <td class='rodape-perc'>${formatarPerc(tRealT2, tEspT2)}</td>
+                    
+                    <td style='padding: 8px;'>${tRealT3} / ${tEspT3}</td>
+                    <td class='rodape-perc'>${formatarPerc(tRealT3, tEspT3)}</td>
+                    
+                    <td style='padding: 8px;'>${tRealT4} / ${tEspT4}</td>
+                    <td class='rodape-perc'>${formatarPerc(tRealT4, tEspT4)}</td>
+                    
+                    <td style='padding: 8px; border-left: 2px solid #558bb5; ${vCSS_Ocultar}'>${tSem1} / ${tEspSemana}</td>
+                    <td class='rodape-perc' style='${vCSS_Ocultar}'>${formatarPerc(tSem1, tNumEspSemana)}</td>
+                    
+                    <td style='padding: 8px; ${vCSS_BordaRodapeSem2}'>${tSem2} / ${tEspSemana}</td>
+                    <td class='rodape-perc'>${formatarPerc(tSem2, tNumEspSemana)}</td>
+                    
+                    <td style='padding: 8px;'>${tSem3} / ${tEspSemana}</td>
+                    <td class='rodape-perc'>${formatarPerc(tSem3, tNumEspSemana)}</td>
+                    
+                    <td style='padding: 8px;'>${tSem4} / ${tEspSemana}</td>
+                    <td class='rodape-perc'>${formatarPerc(tSem4, tNumEspSemana)}</td>
+                    
+                    <td style='padding: 8px; background-color: #00335a; border-left: 2px solid #558bb5;'>${tTotalSemanas}</td>
+                    <td class='rodape-perc' style='background-color: #00223d;'>${formatarPerc(tTotalSemanas, tEsp)}</td>
+                </tr>`;
+
+            // Injetando no HTML
+            document.getElementById("cabecalho-tabela").innerHTML = cabecalhoHTML;
+            document.getElementById("corpo-tabela").innerHTML = corpoHTML;
+            document.getElementById("rodape-tabela").innerHTML = rodapeHTML;
+        }
+
+        // --- GATILHOS DE ATUALIZAÇÃO ---
+        carregarDados();
+        setInterval(carregarDados, 30 * 60 * 1000);
+    </script>
+</body>
+</html>
