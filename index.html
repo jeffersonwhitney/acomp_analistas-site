@@ -181,8 +181,27 @@
 
         async function carregarDados() {
             try {
-                const reqBase = new Promise(resolve => Papa.parse(urlBase, { download: true, header: false, skipEmptyLines: true, complete: resolve }));
-                const reqForms = new Promise(resolve => Papa.parse(urlForms, { download: true, header: true, skipEmptyLines: true, complete: resolve }));
+                document.getElementById("texto-atualizacao").innerText = "Buscando base de dados...";
+                
+                const reqBase = new Promise((resolve, reject) => {
+                    Papa.parse(urlBase, { 
+                        download: true, 
+                        header: false, 
+                        skipEmptyLines: true, 
+                        complete: resolve,
+                        error: (err) => reject(new Error("Falha ao baixar Base: " + err.message))
+                    });
+                });
+
+                const reqForms = new Promise((resolve, reject) => {
+                    Papa.parse(urlForms, { 
+                        download: true, 
+                        header: true, 
+                        skipEmptyLines: true, 
+                        complete: resolve,
+                        error: (err) => reject(new Error("Falha ao baixar Forms: " + err.message))
+                    });
+                });
                 
                 const [resBase, resForms] = await Promise.all([reqBase, reqForms]);
                 processarDados(resBase.data, resForms.data);
@@ -195,9 +214,10 @@
                 document.getElementById("texto-atualizacao").style.color = "#666";
 
             } catch (error) {
-                console.error("Erro:", error);
-                document.getElementById("texto-atualizacao").innerText = "Falha ao atualizar dados. Tentando novamente no próximo ciclo.";
+                console.error("Erro detalhado no carregamento:", error);
+                document.getElementById("texto-atualizacao").innerText = "Falha ao carregar dados. Verifique a base no Google Sheets.";
                 document.getElementById("texto-atualizacao").style.color = "red";
+                document.getElementById("corpo-tabela").innerHTML = `<tr><td colspan="22" style="text-align: center; color: red;"><b>Erro Crítico:</b> ${error.message} (Verifique console F12)</td></tr>`;
             }
         }
 
