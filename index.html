@@ -8,21 +8,43 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <style>
+        :root {
+            --azul-principal: #004578;
+            --azul-escuro: #00223d;
+            --azul-medio: #00335a;
+            --azul-claro: #e6f0f8;
+            --cinza-fundo: #f4f7f6;
+            --borda-cor: #dce1e7;
+            --verde-bg: #dcfce7;
+            --verde-txt: #166534;
+            --amarelo-bg: #fef9c3;
+            --amarelo-txt: #854d0e;
+            --vermelho-bg: #fee2e2;
+            --vermelho-txt: #991b1b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body { 
-            background-color: #f4f7f6; 
-            font-family: 'Segoe UI', Arial, sans-serif; 
+            background-color: var(--cinza-fundo); 
+            font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif; 
             padding: 20px; 
             margin: 0;
+            color: #333;
         }
+
         .container {
-            background-color: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
-            overflow-x: auto;
+            background-color: #ffffff; 
+            padding: 24px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            max-width: 1400px;
+            margin: 0 auto;
         }
         
-        /* --- ESTILOS DO CABEÇALHO E BOTÕES --- */
+        /* --- CABEÇALHO E NAVEGAÇÃO --- */
         .cabecalho-container {
             display: flex;
             justify-content: space-between;
@@ -30,79 +52,324 @@
             margin-bottom: 20px;
             flex-wrap: wrap;
             gap: 15px;
+            border-bottom: 2px solid #f0f4f8;
+            padding-bottom: 16px;
         }
-        .espacador {
-            flex: 1;
+
+        .controles-periodo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex: 1.2;
         }
+
         .titulo-container {
-            flex: 2;
+            flex: 1.5;
             text-align: center;
         }
+
+        .titulo-container h2 {
+            color: var(--azul-principal);
+            margin: 0 0 6px 0;
+            font-size: 20px;
+            letter-spacing: -0.3px;
+        }
+
+        .badge-periodo {
+            display: inline-block;
+            background-color: var(--azul-claro);
+            color: var(--azul-principal);
+            font-weight: 700;
+            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-bottom: 4px;
+        }
+
         .botoes-container {
             flex: 1;
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
-        }
-        .btn-acao {
-            background-color: #004578;
-            color: white;
-            padding: 8px 15px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 13px;
-            font-weight: bold;
-            transition: background 0.2s;
-            white-space: nowrap;
-        }
-        .btn-acao:hover {
-            background-color: #00223d;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
-        /* --- ESTILOS DA TABELA --- */
+        /* --- BOTÕES E SELETORES --- */
+        .btn-acao, .btn-periodo, .btn-expandir {
+            background-color: var(--azul-principal);
+            color: white;
+            padding: 8px 13px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            border: 1px solid var(--azul-principal);
+            cursor: pointer;
+        }
+
+        .btn-acao:hover {
+            background-color: var(--azul-escuro);
+            border-color: var(--azul-escuro);
+        }
+
+        .btn-periodo, .btn-expandir {
+            background-color: #ffffff;
+            color: var(--azul-principal);
+        }
+
+        .btn-periodo:hover, .btn-expandir:hover {
+            background-color: var(--azul-claro);
+        }
+
+        .btn-periodo.ativo {
+            background-color: var(--azul-principal);
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(0, 69, 120, 0.25);
+        }
+
+        .btn-expandir {
+            border-color: #94a3b8;
+            color: #475569;
+            font-weight: 500;
+        }
+
+        .select-mes {
+            padding: 7px 10px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 13px;
+            color: #334155;
+            background-color: #fff;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* --- CARDS DE RESUMO (KPIs) --- */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 18px;
+        }
+
+        .kpi-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid var(--azul-principal);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .kpi-titulo {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .kpi-valor {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--azul-principal);
+        }
+
+        .kpi-sub {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .barra-progresso-bg {
+            width: 100%;
+            height: 6px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+
+        .barra-progresso-fill {
+            height: 100%;
+            background-color: var(--azul-principal);
+            transition: width 0.4s ease;
+        }
+
+        .dica-interacao {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- TABELA PRINCIPAL E SUB-LINHAS --- */
+        .tabela-wrapper {
+            overflow-x: auto;
+            border-radius: 6px;
+            border: 1px solid var(--borda-cor);
+        }
+
         .tabela-equipe { 
             width: 100%; 
             border-collapse: collapse; 
             font-size: 13px; 
         }
+
         .tabela-equipe thead tr { 
-            background-color: #004578; 
+            background-color: var(--azul-principal); 
             color: white; 
             text-align: center; 
-            height: 35px; 
+            height: 34px; 
         }
+
+        .tabela-equipe thead tr.linha-grupo th {
+            background-color: var(--azul-escuro);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            padding: 6px;
+            height: 28px;
+        }
+
         .tabela-equipe th, .tabela-equipe td { 
-            padding: 8px; 
-            border: 1px solid #ddd; 
+            padding: 8px 8px; 
+            border: 1px solid var(--borda-cor); 
+            white-space: nowrap;
         }
-        .tabela-equipe tbody tr:nth-child(even) { background-color: #f0f4f8; }
-        .tabela-equipe tbody tr:nth-child(odd) { background-color: #ffffff; }
-        .tabela-equipe tbody tr:hover { background-color: #e2e8f0; } 
-        
+
+        /* Linhas de Analistas (Clicáveis) */
+        .linha-analista {
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+            background-color: #ffffff;
+        }
+
+        .linha-analista:nth-of-type(4n+1) {
+            background-color: #ffffff;
+        }
+
+        .linha-analista:hover { 
+            background-color: #e6f0f8 !important; 
+        }
+
+        .linha-analista.aberta {
+            background-color: #e6f0f8 !important;
+            border-bottom: 1px solid #93c5fd;
+        }
+
+        .nome-clicavel {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .icone-seta {
+            display: inline-block;
+            font-size: 10px;
+            color: var(--azul-principal);
+            transition: transform 0.2s ease;
+            width: 14px;
+            text-align: center;
+        }
+
+        .linha-analista.aberta .icone-seta,
+        .linha-rodape.aberta .icone-seta {
+            transform: rotate(90deg);
+        }
+
+        /* Sub-linhas (Relatórios Internos do Analista) */
+        .sub-linha {
+            display: none;
+            background-color: #f8fafc;
+            font-size: 12px;
+            color: #475569;
+        }
+
+        .sub-linha.visivel {
+            display: table-row;
+        }
+
+        .sub-linha:hover {
+            background-color: #f1f5f9;
+        }
+
+        .sub-linha td:first-child {
+            padding-left: 32px;
+            text-align: left;
+            color: #334155;
+            font-weight: 500;
+            border-left: 4px solid var(--azul-principal);
+        }
+
+        .sub-linha-rodape {
+            background-color: #00335a !important;
+            color: #e2e8f0 !important;
+        }
+
+        .sub-linha-rodape td:first-child {
+            color: #ffffff !important;
+            border-left: 4px solid #38bdf8 !important;
+        }
+
+        /* Destaque para célula com entrega pendente na semana */
+        .celula-pendente {
+            color: var(--vermelho-txt);
+            font-weight: 700;
+            background-color: #fff5f5;
+        }
+
+        .celula-ok {
+            color: var(--verde-txt);
+            font-weight: 600;
+        }
+
+        .celula-sem-meta {
+            color: #94a3b8;
+        }
+
         .th-perc { 
-            width: 35px; 
+            width: 48px; 
             padding: 4px; 
             font-size: 11px; 
-            font-weight: normal; 
-            background-color: #00335a; 
-            border: 1px solid #ddd; 
+            font-weight: 600; 
+            background-color: var(--azul-medio); 
         }
+
         .td-perc { 
-            padding: 4px; 
+            padding: 4px 6px; 
             font-size: 11px; 
-            font-weight: bold; 
-            color: #666; 
+            font-weight: 700; 
             text-align: center; 
-            border-right: 1px solid #ddd; 
-            background-color: rgba(0,0,0,0.03); 
         }
+
+        /* Cores Semafóricas para % */
+        .perc-neutro { color: #94a3b8; background-color: rgba(0,0,0,0.02); font-weight: 500; }
+        .perc-alto { color: var(--verde-txt); background-color: var(--verde-bg); }
+        .perc-medio { color: var(--amarelo-txt); background-color: var(--amarelo-bg); }
+        .perc-baixo { color: var(--vermelho-txt); background-color: var(--vermelho-bg); }
+
         .rodape-perc { 
             padding: 4px; 
             font-size: 11px; 
             color: #fff; 
-            background-color: #00223d; 
+            background-color: var(--azul-escuro); 
             text-align: center; 
-            border-right: 1px solid #558bb5; 
+        }
+
+        .divisor-secao {
+            border-left: 2px solid #94a3b8 !important;
         }
     </style>
 </head>
@@ -111,29 +378,78 @@
     <div class="container">
         
         <div class="cabecalho-container">
-            <div class="espacador"></div>
-            
-            <div class="titulo-container">
-                <h2 style='color: #004578; margin-bottom: 5px; margin-top: 0;'>Acompanhamento de Envios - Equipe Comercial</h2>
-                <p id="texto-atualizacao" style='color: #666; font-size: 12px; margin: 0;'>Atualizando base de dados...</p>
+            <!-- Seletor de Período -->
+            <div class="controles-periodo">
+                <button type="button" id="btn-mes-atual" class="btn-periodo ativo" onclick="selecionarAtalhoMes(0)">
+                    Mês Atual
+                </button>
+                <button type="button" id="btn-mes-passado" class="btn-periodo" onclick="selecionarAtalhoMes(-1)">
+                    Mês Passado
+                </button>
+                <select id="select-historico" class="select-mes" onchange="selecionarMesDropdown(this.value)" title="Escolher outro mês">
+                    <option value="">Histórico...</option>
+                </select>
             </div>
             
+            <!-- Título Central -->
+            <div class="titulo-container">
+                <span id="badge-mes-exibido" class="badge-periodo">Carregando...</span>
+                <h2>Acompanhamento de Envios - Equipe Comercial</h2>
+                <p id="texto-atualizacao" style="color: #666; font-size: 12px; margin: 0;">Atualizando base de dados...</p>
+            </div>
+            
+            <!-- Links Externos -->
             <div class="botoes-container">
                 <a href="https://docs.google.com/forms/d/e/1FAIpQLSfvCfAliGnPFb7hqlgR9oaJDVfrEj_XGAmBVAqDYcAreVxkaA/viewform" target="_blank" class="btn-acao">Formulário</a>
                 <a href="https://docs.google.com/spreadsheets/d/1wWKfaet9v-AtWNdohBTjjucmSryE0kHPZjc3vvRFerU/edit?usp=sharing" target="_blank" class="btn-acao">Histórico</a>
                 <a href="https://docs.google.com/spreadsheets/d/1qO5aeaxKvcFMvLQ327yJDeuzaMFmJ4znMWNizvm3aO4/edit?gid=665822156#gid=665822156" target="_blank" class="btn-acao">Base</a>
             </div>
         </div>
+
+        <!-- Cards de Resumo (KPIs) -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <span class="kpi-titulo">Entregas Realizadas</span>
+                <span class="kpi-valor" id="kpi-realizado">-</span>
+                <span class="kpi-sub" id="kpi-periodo-txt">No mês selecionado</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-titulo">Meta Esperada</span>
+                <span class="kpi-valor" id="kpi-meta">-</span>
+                <span class="kpi-sub">Total previsto na Base</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-titulo">% de Atingimento Geral</span>
+                <span class="kpi-valor" id="kpi-perc">-</span>
+                <div class="barra-progresso-bg">
+                    <div class="barra-progresso-fill" id="kpi-barra" style="width: 0%;"></div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-titulo">Analistas Ativos</span>
+                <span class="kpi-valor" id="kpi-analistas">-</span>
+                <span class="kpi-sub" id="kpi-analistas-100">0 com 100% da meta</span>
+            </div>
+        </div>
+
+        <!-- Barra de Dica e Botão de Expandir Todos -->
+        <div class="dica-interacao">
+            <span>💡 <b>Dica:</b> Clique no nome de um analista (ou no Total Geral) para abrir as entregas detalhadas por relatório em cada semana.</span>
+            <button type="button" id="btn-toggle-todos" class="btn-expandir" onclick="alternarTodosAnalistas()">
+                Expandir Todos
+            </button>
+        </div>
         
-        <table class='tabela-equipe' id="tabela-dashboard">
-            <thead id="cabecalho-tabela">
-                </thead>
-            <tbody id="corpo-tabela">
-                <tr><td colspan="22" style="text-align: center;">Buscando dados no servidor...</td></tr>
-            </tbody>
-            <tfoot id="rodape-tabela">
-                </tfoot>
-        </table>
+        <!-- Tabela Principal Enxuta (14 colunas) -->
+        <div class="tabela-wrapper">
+            <table class="tabela-equipe" id="tabela-dashboard">
+                <thead id="cabecalho-tabela"></thead>
+                <tbody id="corpo-tabela">
+                    <tr><td colspan="14" style="text-align: center; padding: 20px;">Buscando dados no servidor...</td></tr>
+                </tbody>
+                <tfoot id="rodape-tabela"></tfoot>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -141,13 +457,32 @@
         const urlBase = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQySFFFFCw7rifwK1Ipj3-9yq8eljPL7Hn5RUFTpQgrFxraRqmz0ne52yqB41cHHhPzh1EhZj0Nxd_-/pub?gid=665822156&single=true&output=csv";
         const urlForms = "https://docs.google.com/spreadsheets/d/1wWKfaet9v-AtWNdohBTjjucmSryE0kHPZjc3vvRFerU/export?format=csv";
 
-        // Nomes dos Relatórios
-        const rel1 = "Atualização dos PEX";
-        const rel2 = "Atualização das campanhas";
-        const rel3 = "Padronização das metas para o app";
-        const rel4 = "Demais acompanhamentos";
+        // Configuração dos 4 Tipos de Relatório
+        const tiposRelatorio = [
+            { id: 1, nome: "Atualização dos PEX" },
+            { id: 2, nome: "Atualização das campanhas" },
+            { id: 3, nome: "Padronização das metas para o app" },
+            { id: 4, nome: "Demais acompanhamentos" }
+        ];
 
-        // Auxiliar para formatação de números inteiros/decimais
+        // Cache dos dados brutos
+        let cacheBase = [];
+        let cacheForms = [];
+
+        // Controle de quais analistas estão com a sanfona aberta
+        const expandidos = new Set();
+        let todosExpandidos = false;
+
+        // Estado do filtro de data (Inicia no mês/ano atual)
+        const hojeInicial = new Date();
+        let filtroMes = hojeInicial.getMonth();
+        let filtroAno = hojeInicial.getFullYear();
+
+        const nomesMeses = [
+            "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+        ];
+
         function formatNum(valor) {
             if (valor === undefined || valor === null || isNaN(valor)) return 0;
             return (valor % 1 !== 0) ? valor.toFixed(1) : valor;
@@ -158,25 +493,141 @@
             return Math.round((valor / total) * 100) + "%";
         }
 
-        // Converte string 'DD/MM/YYYY HH:MM:SS' para objeto Date
+        function getClassePerc(valor, total) {
+            if (!total || total === 0) return "perc-neutro";
+            const perc = (valor / total) * 100;
+            if (perc >= 100) return "perc-alto";
+            if (perc >= 70) return "perc-medio";
+            return "perc-baixo";
+        }
+
+        // Destaca visualmente na sub-linha se o relatório daquela semana está pendente ou em dia
+        function getClasseCelulaSub(real, meta) {
+            if (!meta || meta === 0) return "celula-sem-meta";
+            if (real < meta) return "celula-pendente";
+            return "celula-ok";
+        }
+
         function parseDataHora(dataStr) {
             if (!dataStr) return null;
             const partes = dataStr.trim().split(" ");
             const dataPartes = partes[0].split(/[\/-]/);
             if (dataPartes.length < 3) return null;
             const dia = parseInt(dataPartes[0], 10);
-            const mes = parseInt(dataPartes[1], 10) - 1; // Mês no JS é 0-11
+            const mes = parseInt(dataPartes[1], 10) - 1;
             const ano = parseInt(dataPartes[2], 10);
             return new Date(ano, mes, dia);
         }
 
-        // Calcula a semana do mês pelo calendário real (Segunda a Domingo)
         function getSemanaDoMes(data) {
             const primeiroDia = new Date(data.getFullYear(), data.getMonth(), 1);
             const diaDaSemanaInicio = (primeiroDia.getDay() + 6) % 7; // Segunda = 0, Domingo = 6
             const offset = data.getDate() + diaDaSemanaInicio - 1;
             const numSemana = Math.floor(offset / 7) + 1;
-            return Math.min(numSemana, 5); // Limita em até 5 semanas
+            return Math.min(numSemana, 5);
+        }
+
+        // Abre ou fecha os relatórios de um analista específico
+        function alternarAnalista(chaveId) {
+            if (expandidos.has(chaveId)) {
+                expandidos.delete(chaveId);
+            } else {
+                expandidos.add(chaveId);
+            }
+
+            const linhaPai = document.getElementById(`pai-${chaveId}`);
+            if (linhaPai) {
+                linhaPai.classList.toggle("aberta", expandidos.has(chaveId));
+            }
+
+            const subLinhas = document.querySelectorAll(`.sub-${chaveId}`);
+            subLinhas.forEach(tr => {
+                tr.classList.toggle("visivel", expandidos.has(chaveId));
+            });
+        }
+
+        // Abre ou fecha todos os analistas de uma só vez
+        function alternarTodosAnalistas() {
+            todosExpandidos = !todosExpandidos;
+            const btn = document.getElementById("btn-toggle-todos");
+            btn.innerText = todosExpandidos ? "Recolher Todos" : "Expandir Todos";
+
+            const todasLinhasPai = document.querySelectorAll("[data-chave-id]");
+            todasLinhasPai.forEach(tr => {
+                const chaveId = tr.getAttribute("data-chave-id");
+                if (todosExpandidos) {
+                    expandidos.add(chaveId);
+                } else {
+                    expandidos.delete(chaveId);
+                }
+                tr.classList.toggle("aberta", todosExpandidos);
+                document.querySelectorAll(`.sub-${chaveId}`).forEach(sub => {
+                    sub.classList.toggle("visivel", todosExpandidos);
+                });
+            });
+        }
+
+        function selecionarAtalhoMes(offsetMeses) {
+            const ref = new Date();
+            ref.setDate(1);
+            ref.setMonth(ref.getMonth() + offsetMeses);
+
+            filtroMes = ref.getMonth();
+            filtroAno = ref.getFullYear();
+
+            document.getElementById("btn-mes-atual").classList.toggle("ativo", offsetMeses === 0);
+            document.getElementById("btn-mes-passado").classList.toggle("ativo", offsetMeses === -1);
+            document.getElementById("select-historico").value = `${filtroAno}-${filtroMes}`;
+
+            renderizarDashboard();
+        }
+
+        function selecionarMesDropdown(valor) {
+            if (!valor) return;
+            const [anoStr, mesStr] = valor.split("-");
+            filtroAno = parseInt(anoStr, 10);
+            filtroMes = parseInt(mesStr, 10);
+
+            const agora = new Date();
+            const mesPassado = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
+
+            const ehAtual = (filtroMes === agora.getMonth() && filtroAno === agora.getFullYear());
+            const ehPassado = (filtroMes === mesPassado.getMonth() && filtroAno === mesPassado.getFullYear());
+
+            document.getElementById("btn-mes-atual").classList.toggle("ativo", ehAtual);
+            document.getElementById("btn-mes-passado").classList.toggle("ativo", ehPassado);
+
+            renderizarDashboard();
+        }
+
+        function popularDropdownMeses(formsArray) {
+            const mesesSet = new Set();
+            const agora = new Date();
+            const mesAnt = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
+
+            mesesSet.add(`${agora.getFullYear()}-${String(agora.getMonth()).padStart(2, '0')}`);
+            mesesSet.add(`${mesAnt.getFullYear()}-${String(mesAnt.getMonth()).padStart(2, '0')}`);
+
+            formsArray.forEach(f => {
+                const d = parseDataHora(f["Carimbo de data/hora"]);
+                if (d && !isNaN(d.getTime())) {
+                    const chave = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+                    mesesSet.add(chave);
+                }
+            });
+
+            const listaOrdenada = Array.from(mesesSet).sort().reverse();
+            const select = document.getElementById("select-historico");
+            select.innerHTML = `<option value="">Histórico de meses...</option>`;
+
+            listaOrdenada.forEach(item => {
+                const [ano, mesZeroPadded] = item.split("-");
+                const mesIndex = parseInt(mesZeroPadded, 10);
+                const val = `${ano}-${mesIndex}`;
+                const texto = `${nomesMeses[mesIndex]} / ${ano}`;
+                const selected = (parseInt(ano, 10) === filtroAno && mesIndex === filtroMes) ? "selected" : "";
+                select.innerHTML += `<option value="${val}" ${selected}>${texto}</option>`;
+            });
         }
 
         async function carregarDados() {
@@ -204,204 +655,239 @@
                 });
                 
                 const [resBase, resForms] = await Promise.all([reqBase, reqForms]);
-                processarDados(resBase.data, resForms.data);
                 
-                // Atualiza o relógio na tela
+                cacheBase = resBase.data;
+                cacheForms = resForms.data;
+
+                popularDropdownMeses(cacheForms);
+                renderizarDashboard();
+                
                 const agora = new Date();
                 const dataFormatada = agora.toLocaleDateString('pt-BR');
                 const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                document.getElementById("texto-atualizacao").innerText = `Última atualização: ${dataFormatada} às ${horaFormatada} - Próxima em 30 min`;
+                document.getElementById("texto-atualizacao").innerText = `Última atualização: ${dataFormatada} às ${horaFormatada} • Atualização automática a cada 30 min`;
                 document.getElementById("texto-atualizacao").style.color = "#666";
 
             } catch (error) {
                 console.error("Erro detalhado no carregamento:", error);
                 document.getElementById("texto-atualizacao").innerText = "Falha ao carregar dados. Verifique a base no Google Sheets.";
                 document.getElementById("texto-atualizacao").style.color = "red";
-                document.getElementById("corpo-tabela").innerHTML = `<tr><td colspan="22" style="text-align: center; color: red;"><b>Erro Crítico:</b> ${error.message} (Verifique console F12)</td></tr>`;
+                document.getElementById("corpo-tabela").innerHTML = `<tr><td colspan="14" style="text-align: center; color: red; padding: 20px;"><b>Erro Crítico:</b> ${error.message} (Verifique console F12)</td></tr>`;
             }
         }
 
-        function processarDados(baseArray, formsArray) {
-            // Filtrar cabeçalho da Base
-            const base = baseArray.filter(r => r[0] && r[0].toLowerCase() !== 'nome');
-            
-            // Filtrar respostas do Forms apenas para o MÊS e ANO VIGENTES
-            const agora = new Date();
-            const mesVigente = agora.getMonth();
-            const anoVigente = agora.getFullYear();
+        function renderizarDashboard() {
+            if (!cacheBase.length) return;
 
-            const forms = formsArray.filter(f => {
+            const nomeMesAtual = `${nomesMeses[filtroMes]} de ${filtroAno}`;
+            document.getElementById("badge-mes-exibido").innerText = `Exibindo: ${nomeMesAtual}`;
+            document.getElementById("kpi-periodo-txt").innerText = `Ref.: ${nomesMeses[filtroMes]}/${filtroAno}`;
+
+            const base = cacheBase.filter(r => r[0] && r[0].toLowerCase() !== 'nome');
+            
+            const forms = cacheForms.filter(f => {
                 const d = parseDataHora(f["Carimbo de data/hora"]);
-                return d && d.getMonth() === mesVigente && d.getFullYear() === anoVigente;
+                return d && d.getMonth() === filtroMes && d.getFullYear() === filtroAno;
             });
 
-            // Extrair lista única de analistas ordenados
             const analistas = [...new Set(base.map(r => r[0]))].sort();
 
             let corpoHTML = "";
             
-            // Variáveis de Totais Gerais
+            // Acumuladores Gerais (Rodapé)
             let tReal = 0, tEsp = 0;
-            let tRealT1 = 0, tEspT1 = 0, tRealT2 = 0, tEspT2 = 0;
-            let tRealT3 = 0, tEspT3 = 0, tRealT4 = 0, tEspT4 = 0;
-            
-            let tSem1 = 0, tSem2 = 0, tSem3 = 0, tSem4 = 0, tSem5 = 0;
-            let tEspSem1 = 0, tEspSem2 = 0, tEspSem3 = 0, tEspSem4 = 0, tEspSem5 = 0;
+            let tSem = [0, 0, 0, 0, 0];
+            let tEspSem = [0, 0, 0, 0, 0];
+            let analistasMetaBatida = 0;
 
-            analistas.forEach(nome => {
-                let baseA = base.filter(r => r[0] === nome);
-                let formsA = forms.filter(r => r["Nome"] === nome);
+            // Acumuladores por Relatório para o Rodapé Expansível
+            const totaisPorRelatorio = {};
+            tiposRelatorio.forEach(t => {
+                totaisPorRelatorio[t.id] = {
+                    nome: t.nome,
+                    realTotal: 0,
+                    espTotal: 0,
+                    realSem: [0, 0, 0, 0, 0],
+                    espSem: [0, 0, 0, 0, 0]
+                };
+            });
 
-                // Esperado Total (Coluna G = índice 6)
-                let vEsperadoTotal = baseA.reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
-                let vRealizadoTotal = formsA.length;
+            analistas.forEach((nome, index) => {
+                const chaveId = `analista_${index}`;
+                const estaAberto = expandidos.has(chaveId);
+
+                const baseA = base.filter(r => r[0] === nome);
+                const formsA = forms.filter(r => r["Nome"] === nome);
+
+                const vEsperadoTotal = baseA.reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
+                const vRealizadoTotal = formsA.length;
                 
+                if (vEsperadoTotal > 0 && vRealizadoTotal >= vEsperadoTotal) {
+                    analistasMetaBatida++;
+                }
+
                 tEsp += vEsperadoTotal;
                 tReal += vRealizadoTotal;
 
-                // T1 a T4
-                let vEspT1 = baseA.filter(r => parseInt(r[1]) === 1).reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
-                let vRealT1 = formsA.filter(r => r["Relatório"] === rel1).length;
-                tEspT1 += vEspT1; tRealT1 += vRealT1;
+                // Metas e Realizados Semanais do Analista (Consolidado)
+                const vEspSem = [0, 0, 0, 0, 0];
+                const vRealSem = [0, 0, 0, 0, 0];
 
-                let vEspT2 = baseA.filter(r => parseInt(r[1]) === 2).reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
-                let vRealT2 = formsA.filter(r => r["Relatório"] === rel2).length;
-                tEspT2 += vEspT2; tRealT2 += vRealT2;
-
-                let vEspT3 = baseA.filter(r => parseInt(r[1]) === 3).reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
-                let vRealT3 = formsA.filter(r => r["Relatório"] === rel3).length;
-                tEspT3 += vEspT3; tRealT3 += vRealT3;
-
-                let vEspT4 = baseA.filter(r => parseInt(r[1]) === 4).reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
-                let vRealT4 = formsA.filter(r => r["Relatório"] === rel4).length;
-                tEspT4 += vEspT4; tRealT4 += vRealT4;
-
-                // Metas Exatas das Semanas 1 a 5 (Colunas H a L = Índices 7 a 11)
-                let vEspSem1 = baseA.reduce((sum, r) => sum + (parseFloat(r[7]) || 0), 0);
-                let vEspSem2 = baseA.reduce((sum, r) => sum + (parseFloat(r[8]) || 0), 0);
-                let vEspSem3 = baseA.reduce((sum, r) => sum + (parseFloat(r[9]) || 0), 0);
-                let vEspSem4 = baseA.reduce((sum, r) => sum + (parseFloat(r[10]) || 0), 0);
-                let vEspSem5 = baseA.reduce((sum, r) => sum + (parseFloat(r[11]) || 0), 0);
-
-                tEspSem1 += vEspSem1; tEspSem2 += vEspSem2; tEspSem3 += vEspSem3;
-                tEspSem4 += vEspSem4; tEspSem5 += vEspSem5;
-
-                // Contagem de Envios Realizados por Semana (Calendário Real)
-                let vRealSem1 = 0, vRealSem2 = 0, vRealSem3 = 0, vRealSem4 = 0, vRealSem5 = 0;
+                for (let s = 0; s < 5; s++) {
+                    vEspSem[s] = baseA.reduce((sum, r) => sum + (parseFloat(r[7 + s]) || 0), 0);
+                    tEspSem[s] += vEspSem[s];
+                }
 
                 formsA.forEach(f => {
-                    let d = parseDataHora(f["Carimbo de data/hora"]);
+                    const d = parseDataHora(f["Carimbo de data/hora"]);
                     if (d) {
-                        let numSemana = getSemanaDoMes(d);
-                        if (numSemana === 1) vRealSem1++;
-                        else if (numSemana === 2) vRealSem2++;
-                        else if (numSemana === 3) vRealSem3++;
-                        else if (numSemana === 4) vRealSem4++;
-                        else if (numSemana === 5) vRealSem5++;
+                        const numSemana = getSemanaDoMes(d);
+                        if (numSemana >= 1 && numSemana <= 5) {
+                            vRealSem[numSemana - 1]++;
+                            tSem[numSemana - 1]++;
+                        }
                     }
                 });
 
-                tSem1 += vRealSem1; tSem2 += vRealSem2; tSem3 += vRealSem3;
-                tSem4 += vRealSem4; tSem5 += vRealSem5;
-
+                // 1. Linha Principal do Analista
                 corpoHTML += `
-                <tr style='text-align: center; border-bottom: 1px solid #ddd; height: 40px;'>
-                    <td style='padding: 8px; text-align: left;'><b>${nome}</b></td>
-                    <td style='padding: 8px; font-weight: bold; color: #004578;'>${vRealizadoTotal}</td>
-                    <td style='padding: 8px; font-weight: bold; color: #777;'>${formatNum(vEsperadoTotal)}</td>
-                    <td class='td-perc'>${formatarPerc(vRealizadoTotal, vEsperadoTotal)}</td>
-                    
-                    <td style='padding: 8px;'>${vRealT1} / ${formatNum(vEspT1)}</td>
-                    <td class='td-perc'>${formatarPerc(vRealT1, vEspT1)}</td>
-                    
-                    <td style='padding: 8px;'>${vRealT2} / ${formatNum(vEspT2)}</td>
-                    <td class='td-perc'>${formatarPerc(vRealT2, vEspT2)}</td>
-                    
-                    <td style='padding: 8px;'>${vRealT3} / ${formatNum(vEspT3)}</td>
-                    <td class='td-perc'>${formatarPerc(vRealT3, vEspT3)}</td>
-                    
-                    <td style='padding: 8px;'>${vRealT4} / ${formatNum(vEspT4)}</td>
-                    <td class='td-perc'>${formatarPerc(vRealT4, vEspT4)}</td>
-                    
-                    <td style='padding: 8px; border-left: 2px solid #ddd;'>${vRealSem1} / ${formatNum(vEspSem1)}</td>
-                    <td class='td-perc'>${formatarPerc(vRealSem1, vEspSem1)}</td>
-                    
-                    <td style='padding: 8px;'>${vRealSem2} / ${formatNum(vEspSem2)}</td>
-                    <td class='td-perc'>${formatarPerc(vRealSem2, vEspSem2)}</td>
-                    
-                    <td style='padding: 8px;'>${vRealSem3} / ${formatNum(vEspSem3)}</td>
-                    <td class='td-perc'>${formatarPerc(vRealSem3, vEspSem3)}</td>
-                    
-                    <td style='padding: 8px;'>${vRealSem4} / ${formatNum(vEspSem4)}</td>
-                    <td class='td-perc'>${formatarPerc(vRealSem4, vEspSem4)}</td>
-                    
-                    <td style='padding: 8px;'>${vRealSem5} / ${formatNum(vEspSem5)}</td>
-                    <td class='td-perc'>${formatarPerc(vRealSem5, vEspSem5)}</td>
-                </tr>`;
+                <tr id="pai-${chaveId}" data-chave-id="${chaveId}" class="linha-analista ${estaAberto ? 'aberta' : ''}" onclick="alternarAnalista('${chaveId}')" style="text-align: center; height: 40px;">
+                    <td style="text-align: left;">
+                        <div class="nome-clicavel">
+                            <span class="icone-seta">▶</span>
+                            <span>${nome}</span>
+                        </div>
+                    </td>
+                    <td style="font-weight: bold; color: #004578;">${vRealizadoTotal}</td>
+                    <td style="font-weight: bold; color: #64748b;">${formatNum(vEsperadoTotal)}</td>
+                    <td class="td-perc ${getClassePerc(vRealizadoTotal, vEsperadoTotal)}">${formatarPerc(vRealizadoTotal, vEsperadoTotal)}</td>`;
+
+                for (let s = 0; s < 5; s++) {
+                    corpoHTML += `
+                    <td class="${s === 0 ? 'divisor-secao' : ''}">${vRealSem[s]} / ${formatNum(vEspSem[s])}</td>
+                    <td class="td-perc ${getClassePerc(vRealSem[s], vEspSem[s])}">${formatarPerc(vRealSem[s], vEspSem[s])}</td>`;
+                }
+                corpoHTML += `</tr>`;
+
+                // 2. Sub-linhas Internas (Por Tipo de Relatório x Semana)
+                tiposRelatorio.forEach(rel => {
+                    const baseRel = baseA.filter(r => parseInt(r[1], 10) === rel.id);
+                    const formsRel = formsA.filter(r => r["Relatório"] && r["Relatório"].trim() === rel.nome);
+
+                    const espRelTotal = baseRel.reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
+                    const realRelTotal = formsRel.length;
+
+                    totaisPorRelatorio[rel.id].espTotal += espRelTotal;
+                    totaisPorRelatorio[rel.id].realTotal += realRelTotal;
+
+                    const espRelSem = [0, 0, 0, 0, 0];
+                    const realRelSem = [0, 0, 0, 0, 0];
+
+                    for (let s = 0; s < 5; s++) {
+                        espRelSem[s] = baseRel.reduce((sum, r) => sum + (parseFloat(r[7 + s]) || 0), 0);
+                        totaisPorRelatorio[rel.id].espSem[s] += espRelSem[s];
+                    }
+
+                    formsRel.forEach(f => {
+                        const d = parseDataHora(f["Carimbo de data/hora"]);
+                        if (d) {
+                            const numSemana = getSemanaDoMes(d);
+                            if (numSemana >= 1 && numSemana <= 5) {
+                                realRelSem[numSemana - 1]++;
+                                totaisPorRelatorio[rel.id].realSem[numSemana - 1]++;
+                            }
+                        }
+                    });
+
+                    corpoHTML += `
+                    <tr class="sub-linha sub-${chaveId} ${estaAberto ? 'visivel' : ''}" style="text-align: center; height: 32px;">
+                        <td>↳ ${rel.nome}</td>
+                        <td style="font-weight: 600;">${realRelTotal}</td>
+                        <td style="color: #64748b;">${formatNum(espRelTotal)}</td>
+                        <td class="td-perc ${getClassePerc(realRelTotal, espRelTotal)}">${formatarPerc(realRelTotal, espRelTotal)}</td>`;
+
+                    for (let s = 0; s < 5; s++) {
+                        const classeStatus = getClasseCelulaSub(realRelSem[s], espRelSem[s]);
+                        corpoHTML += `
+                        <td class="${s === 0 ? 'divisor-secao' : ''} ${classeStatus}">${realRelSem[s]} / ${formatNum(espRelSem[s])}</td>
+                        <td class="td-perc ${getClassePerc(realRelSem[s], espRelSem[s])}">${formatarPerc(realRelSem[s], espRelSem[s])}</td>`;
+                    }
+                    corpoHTML += `</tr>`;
+                });
             });
 
-            // Montagem do Cabeçalho
+            // Atualiza KPIs do Topo
+            const percGeralNum = tEsp > 0 ? Math.round((tReal / tEsp) * 100) : 0;
+            document.getElementById("kpi-realizado").innerText = tReal;
+            document.getElementById("kpi-meta").innerText = formatNum(tEsp);
+            document.getElementById("kpi-perc").innerText = formatarPerc(tReal, tEsp);
+            document.getElementById("kpi-barra").style.width = `${Math.min(percGeralNum, 100)}%`;
+            document.getElementById("kpi-analistas").innerText = analistas.length;
+            document.getElementById("kpi-analistas-100").innerText = `${analistasMetaBatida} com 100% da meta`;
+
+            // Montagem do Cabeçalho Enxuto (14 Colunas)
             const cabecalhoHTML = `
+                <tr class="linha-grupo">
+                    <th colspan="4">Consolidado Mensal</th>
+                    <th colspan="10" class="divisor-secao">Acompanhamento Semanal (Real / Meta)</th>
+                </tr>
                 <tr>
-                    <th style='padding: 8px; border: 1px solid #ddd; text-align: left;'>Analista</th>
-                    <th style='padding: 8px; border: 1px solid #ddd;'>Real</th>
-                    <th style='padding: 8px; border: 1px solid #ddd;'>Meta</th>
-                    <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd;'>${rel1}</th>
-                    <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd;'>${rel2}</th>
-                    <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd;'>${rel3}</th>
-                    <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd;'>${rel4}</th>
-                    <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd; border-left: 2px solid #ddd;'>Sem 1</th>
-                    <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd;'>Sem 2</th>
-                    <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd;'>Sem 3</th>
-                    <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd;'>Sem 4</th>
-                    <th class='th-perc'>%</th>
-                    <th style='padding: 8px; border: 1px solid #ddd;'>Sem 5</th>
-                    <th class='th-perc'>%</th>
+                    <th style="text-align: left; min-width: 240px;">Analista / Relatório</th>
+                    <th>Real</th>
+                    <th>Meta</th>
+                    <th class="th-perc">%</th>
+                    <th class="divisor-secao">Sem 1</th>
+                    <th class="th-perc">%</th>
+                    <th>Sem 2</th>
+                    <th class="th-perc">%</th>
+                    <th>Sem 3</th>
+                    <th class="th-perc">%</th>
+                    <th>Sem 4</th>
+                    <th class="th-perc">%</th>
+                    <th>Sem 5</th>
+                    <th class="th-perc">%</th>
                 </tr>`;
 
-            // Montagem do Rodapé
-            const rodapeHTML = `
-                <tr style='background-color: #004578; color: white; text-align: center; height: 35px; font-weight: bold;'>
-                    <td style='padding: 8px; text-align: left;'>TOTAL GERAL</td>
-                    <td style='padding: 8px;'>${tReal}</td>
-                    <td style='padding: 8px;'>${formatNum(tEsp)}</td>
-                    <td class='rodape-perc'>${formatarPerc(tReal, tEsp)}</td>
-                    
-                    <td style='padding: 8px;'>${tRealT1} / ${formatNum(tEspT1)}</td>
-                    <td class='rodape-perc'>${formatarPerc(tRealT1, tEspT1)}</td>
-                    
-                    <td style='padding: 8px;'>${tRealT2} / ${formatNum(tEspT2)}</td>
-                    <td class='rodape-perc'>${formatarPerc(tRealT2, tEspT2)}</td>
-                    
-                    <td style='padding: 8px;'>${tRealT3} / ${formatNum(tEspT3)}</td>
-                    <td class='rodape-perc'>${formatarPerc(tRealT3, tEspT3)}</td>
-                    
-                    <td style='padding: 8px;'>${tRealT4} / ${formatNum(tEspT4)}</td>
-                    <td class='rodape-perc'>${formatarPerc(tRealT4, tEspT4)}</td>
-                    
-                    <td style='padding: 8px; border-left: 2px solid #558bb5;'>${tSem1} / ${formatNum(tEspSem1)}</td>
-                    <td class='rodape-perc'>${formatarPerc(tSem1, tEspSem1)}</td>
-                    
-                    <td style='padding: 8px;'>${tSem2} / ${formatNum(tEspSem2)}</td>
-                    <td class='rodape-perc'>${formatarPerc(tSem2, tEspSem2)}</td>
-                    
-                    <td style='padding: 8px;'>${tSem3} / ${formatNum(tEspSem3)}</td>
-                    <td class='rodape-perc'>${formatarPerc(tSem3, tEspSem3)}</td>
-                    
-                    <td style='padding: 8px;'>${tSem4} / ${formatNum(tEspSem4)}</td>
-                    <td class='rodape-perc'>${formatarPerc(tSem4, tEspSem4)}</td>
-                    
-                    <td style='padding: 8px;'>${tSem5} / ${formatNum(tEspSem5)}</td>
-                    <td class='rodape-perc'>${formatarPerc(tSem5, tEspSem5)}</td>
-                </tr>`;
+            // Montagem do Rodapé (Também clicável para ver os totais por relatório)
+            const chaveRodape = "rodape_geral";
+            const rodapeAberto = expandidos.has(chaveRodape);
+
+            let rodapeHTML = `
+                <tr id="pai-${chaveRodape}" data-chave-id="${chaveRodape}" class="linha-rodape ${rodapeAberto ? 'aberta' : ''}" onclick="alternarAnalista('${chaveRodape}')" style="background-color: #004578; color: white; text-align: center; height: 38px; font-weight: bold; cursor: pointer;" title="Clique para ver o total da equipe por relatório">
+                    <td style="text-align: left;">
+                        <div class="nome-clicavel" style="color: white;">
+                            <span class="icone-seta" style="color: #93c5fd;">▶</span>
+                            <span>TOTAL GERAL</span>
+                        </div>
+                    </td>
+                    <td>${tReal}</td>
+                    <td>${formatNum(tEsp)}</td>
+                    <td class="rodape-perc">${formatarPerc(tReal, tEsp)}</td>`;
+
+            for (let s = 0; s < 5; s++) {
+                rodapeHTML += `
+                    <td class="${s === 0 ? 'divisor-secao' : ''}">${tSem[s]} / ${formatNum(tEspSem[s])}</td>
+                    <td class="rodape-perc">${formatarPerc(tSem[s], tEspSem[s])}</td>`;
+            }
+            rodapeHTML += `</tr>`;
+
+            // Sub-linhas do Rodapé (Totais de cada relatório na empresa)
+            tiposRelatorio.forEach(rel => {
+                const dadosRel = totaisPorRelatorio[rel.id];
+                rodapeHTML += `
+                <tr class="sub-linha sub-linha-rodape sub-${chaveRodape} ${rodapeAberto ? 'visivel' : ''}" style="text-align: center; height: 32px;">
+                    <td>↳ Total: ${dadosRel.nome}</td>
+                    <td style="font-weight: bold;">${dadosRel.realTotal}</td>
+                    <td>${formatNum(dadosRel.espTotal)}</td>
+                    <td class="rodape-perc">${formatarPerc(dadosRel.realTotal, dadosRel.espTotal)}</td>`;
+
+                for (let s = 0; s < 5; s++) {
+                    rodapeHTML += `
+                    <td class="${s === 0 ? 'divisor-secao' : ''}">${dadosRel.realSem[s]} / ${formatNum(dadosRel.espSem[s])}</td>
+                    <td class="rodape-perc">${formatarPerc(dadosRel.realSem[s], dadosRel.espSem[s])}</td>`;
+                }
+                rodapeHTML += `</tr>`;
+            });
 
             // Injetando no HTML
             document.getElementById("cabecalho-tabela").innerHTML = cabecalhoHTML;
