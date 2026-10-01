@@ -148,6 +148,19 @@
             outline: none;
         }
 
+        /* --- ALERTA DE BASE SEM MÊS CADASTRADO --- */
+        .alerta-base {
+            display: none;
+            background-color: #fffbeb;
+            border: 1px solid #fde68a;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 12.5px;
+            margin-bottom: 16px;
+        }
+
         /* --- CARDS DE RESUMO (KPIs) --- */
         .kpi-grid {
             display: grid;
@@ -210,6 +223,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         /* --- TABELA PRINCIPAL E SUB-LINHAS --- */
@@ -251,10 +266,6 @@
         .linha-analista {
             cursor: pointer;
             transition: background-color 0.15s ease;
-            background-color: #ffffff;
-        }
-
-        .linha-analista:nth-of-type(4n+1) {
             background-color: #ffffff;
         }
 
@@ -406,6 +417,9 @@
             </div>
         </div>
 
+        <!-- Alerta caso o mês selecionado ainda não tenha linhas na coluna M da Base -->
+        <div id="alerta-mes-base" class="alerta-base"></div>
+
         <!-- Cards de Resumo (KPIs) -->
         <div class="kpi-grid">
             <div class="kpi-card">
@@ -416,7 +430,7 @@
             <div class="kpi-card">
                 <span class="kpi-titulo">Meta Esperada</span>
                 <span class="kpi-valor" id="kpi-meta">-</span>
-                <span class="kpi-sub">Total previsto na Base</span>
+                <span class="kpi-sub" id="kpi-meta-sub">Total previsto na Base</span>
             </div>
             <div class="kpi-card">
                 <span class="kpi-titulo">% de Atingimento Geral</span>
@@ -483,6 +497,16 @@
             "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
         ];
 
+        // Normaliza texto (remove acentos, espaços extras e deixa tudo minúsculo)
+        function normalizarTexto(str) {
+            if (!str) return "";
+            return str.toString()
+                .trim()
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "");
+        }
+
         function formatNum(valor) {
             if (valor === undefined || valor === null || isNaN(valor)) return 0;
             return (valor % 1 !== 0) ? valor.toFixed(1) : valor;
@@ -501,7 +525,6 @@
             return "perc-baixo";
         }
 
-        // Destaca visualmente na sub-linha se o relatório daquela semana está pendente ou em dia
         function getClasseCelulaSub(real, meta) {
             if (!meta || meta === 0) return "celula-sem-meta";
             if (real < meta) return "celula-pendente";
@@ -600,7 +623,7 @@
             renderizarDashboard();
         }
 
-        function popularDropdownMeses(formsArray) {
+        function popularDropdownMeses(formsArray, baseArray) {
             const mesesSet = new Set();
             const agora = new Date();
             const mesAnt = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
@@ -608,11 +631,23 @@
             mesesSet.add(`${agora.getFullYear()}-${String(agora.getMonth()).padStart(2, '0')}`);
             mesesSet.add(`${mesAnt.getFullYear()}-${String(mesAnt.getMonth()).padStart(2, '0')}`);
 
+            // Adiciona meses encontrados no Forms
             formsArray.forEach(f => {
                 const d = parseDataHora(f["Carimbo de data/hora"]);
                 if (d && !isNaN(d.getTime())) {
                     const chave = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
                     mesesSet.add(chave);
+                }
+            });
+
+            // Adiciona meses encontrados na Coluna M (índice 12) da Base
+            const nomesNormalizados = nomesMeses.map(m => normalizarTexto(m));
+            baseArray.forEach(r => {
+                const mesColM = normalizarTexto(r[12]);
+                const idx = nomesNormalizados.indexOf(mesColM);
+                if (idx !== -1) {
+                    const anoRef = (idx > agora.getMonth()) ? agora.getFullYear() - 1 : agora.getFullYear();
+                    mesesSet.add(`${anoRef}-${String(idx).padStart(2, '0')}`);
                 }
             });
 
@@ -659,7 +694,7 @@
                 cacheBase = resBase.data;
                 cacheForms = resForms.data;
 
-                popularDropdownMeses(cacheForms);
+                popularDropdownMeses(cacheForms, cacheBase);
                 renderizarDashboard();
                 
                 const agora = new Date();
@@ -679,18 +714,53 @@
         function renderizarDashboard() {
             if (!cacheBase.length) return;
 
-            const nomeMesAtual = `${nomesMeses[filtroMes]} de ${filtroAno}`;
-            document.getElementById("badge-mes-exibido").innerText = `Exibindo: ${nomeMesAtual}`;
-            document.getElementById("kpi-periodo-txt").innerText = `Ref.: ${nomesMeses[filtroMes]}/${filtroAno}`;
+            const nomeMesSelecionado = nomesMeses[filtroMes];
+            const mesAlvoNorm = normalizarTexto(nomeMesSelecionado);
 
-            const base = cacheBase.filter(r => r[0] && r[0].toLowerCase() !== 'nome');
+            document.getElementById("badge-mes-exibido").innerText = `Exibindo: ${nomeMesSelecionado} de ${filtroAno}`;
+            document.getElementById("kpi-periodo-txt").innerText = `Ref.: ${nomeMesSelecionado}/${filtroAno}`;
+
+            // 1. Limpa cabeçalho da Base
+            const baseLimpa = cacheBase.filter(r => {
+                const colA = normalizarTexto(r[0]);
+                const colM = normalizarTexto(r[12]);
+                return colA !== "" && colA !== "nome" && colA !== "analista" && colM !== "mes";
+            });
+
+            // 2. Filtra a Base pela Coluna M (índice 12) correspondente ao mês selecionado
+            let baseDoMes = baseLimpa.filter(r => {
+                const mesLinha = normalizarTexto(r[12]);
+                return mesLinha === mesAlvoNorm || mesLinha.startsWith(mesAlvoNorm);
+            });
+
+            const alertaEl = document.getElementById("alerta-mes-base");
+            const kpiMetaSub = document.getElementById("kpi-meta-sub");
+
+            // Trava de segurança: se o mês virou e ainda não cadastraram o mês novo na coluna M da Base
+            if (baseDoMes.length === 0 && baseLimpa.length > 0) {
+                // Descobre qual é o último mês preenchido na Base para usar como referência provisória
+                const mesesNaBase = [...new Set(baseLimpa.map(r => (r[12] || "").trim()).filter(Boolean))];
+                const ultimoMesCadastrado = mesesNaBase[mesesNaBase.length - 1] || "Geral";
+                
+                baseDoMes = baseLimpa.filter(r => normalizarTexto(r[12]) === normalizarTexto(ultimoMesCadastrado));
+                if (baseDoMes.length === 0) baseDoMes = baseLimpa;
+
+                alertaEl.style.display = "block";
+                alertaEl.innerHTML = `⚠️ <b>Atenção:</b> Nenhuma meta encontrada para <b>${nomeMesSelecionado}</b> na coluna M da planilha Base. Exibindo temporariamente as metas de <b>${ultimoMesCadastrado}</b> para manter os analistas visíveis.`;
+                kpiMetaSub.innerText = `Ref. provisória: ${ultimoMesCadastrado}`;
+            } else {
+                alertaEl.style.display = "none";
+                kpiMetaSub.innerText = `Meta de ${nomeMesSelecionado} (Col. M)`;
+            }
             
+            // 3. Filtra respostas do Forms para o Mês e Ano selecionados
             const forms = cacheForms.filter(f => {
                 const d = parseDataHora(f["Carimbo de data/hora"]);
                 return d && d.getMonth() === filtroMes && d.getFullYear() === filtroAno;
             });
 
-            const analistas = [...new Set(base.map(r => r[0]))].sort();
+            // Extrai lista única de analistas presentes na Base daquele mês
+            const analistas = [...new Set(baseDoMes.map(r => r[0].trim()))].sort();
 
             let corpoHTML = "";
             
@@ -716,9 +786,10 @@
                 const chaveId = `analista_${index}`;
                 const estaAberto = expandidos.has(chaveId);
 
-                const baseA = base.filter(r => r[0] === nome);
-                const formsA = forms.filter(r => r["Nome"] === nome);
+                const baseA = baseDoMes.filter(r => r[0].trim() === nome);
+                const formsA = forms.filter(r => r["Nome"] && r["Nome"].trim() === nome);
 
+                // Esperado Total (Coluna G = índice 6)
                 const vEsperadoTotal = baseA.reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
                 const vRealizadoTotal = formsA.length;
                 
@@ -772,7 +843,7 @@
                 // 2. Sub-linhas Internas (Por Tipo de Relatório x Semana)
                 tiposRelatorio.forEach(rel => {
                     const baseRel = baseA.filter(r => parseInt(r[1], 10) === rel.id);
-                    const formsRel = formsA.filter(r => r["Relatório"] && r["Relatório"].trim() === rel.nome);
+                    const formsRel = formsA.filter(r => r["Relatório"] && normalizarTexto(r["Relatório"]) === normalizarTexto(rel.nome));
 
                     const espRelTotal = baseRel.reduce((sum, r) => sum + (parseFloat(r[6]) || 0), 0);
                     const realRelTotal = formsRel.length;
@@ -828,7 +899,7 @@
             // Montagem do Cabeçalho Enxuto (14 Colunas)
             const cabecalhoHTML = `
                 <tr class="linha-grupo">
-                    <th colspan="4">Consolidado Mensal</th>
+                    <th colspan="4">Consolidado Mensal (${nomeMesSelecionado})</th>
                     <th colspan="10" class="divisor-secao">Acompanhamento Semanal (Real / Meta)</th>
                 </tr>
                 <tr>
@@ -848,7 +919,7 @@
                     <th class="th-perc">%</th>
                 </tr>`;
 
-            // Montagem do Rodapé (Também clicável para ver os totais por relatório)
+            // Montagem do Rodapé (Clicável para ver os totais por relatório)
             const chaveRodape = "rodape_geral";
             const rodapeAberto = expandidos.has(chaveRodape);
 
