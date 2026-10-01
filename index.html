@@ -227,6 +227,67 @@
             gap: 10px;
         }
 
+        /* --- CAMPO DE PESQUISA NO TOPO DOS ANALISTAS --- */
+        .th-analista-header {
+            text-align: left;
+            min-width: 260px;
+            padding: 8px 10px !important;
+        }
+
+        .th-analista-label {
+            font-size: 12px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .busca-analista-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .input-busca-analista {
+            width: 100%;
+            padding: 6px 26px 6px 9px;
+            border-radius: 5px;
+            border: 1px solid #93c5fd;
+            background-color: #ffffff;
+            color: #1e293b;
+            font-size: 12px;
+            font-weight: normal;
+            outline: none;
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .input-busca-analista::placeholder {
+            color: #94a3b8;
+        }
+
+        .input-busca-analista:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-limpar-busca {
+            display: none;
+            position: absolute;
+            right: 6px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 2px 4px;
+            line-height: 1;
+        }
+
+        .btn-limpar-busca:hover {
+            color: #dc2626;
+        }
+
         /* --- TABELA PRINCIPAL E SUB-LINHAS --- */
         .tabela-wrapper {
             overflow-x: auto;
@@ -440,7 +501,7 @@
                 </div>
             </div>
             <div class="kpi-card">
-                <span class="kpi-titulo">Analistas Ativos</span>
+                <span class="kpi-titulo">Analistas Exibidos</span>
                 <span class="kpi-valor" id="kpi-analistas">-</span>
                 <span class="kpi-sub" id="kpi-analistas-100">0 com 100% da meta</span>
             </div>
@@ -457,7 +518,43 @@
         <!-- Tabela Principal Enxuta (14 colunas) -->
         <div class="tabela-wrapper">
             <table class="tabela-equipe" id="tabela-dashboard">
-                <thead id="cabecalho-tabela"></thead>
+                <thead id="cabecalho-tabela">
+                    <tr class="linha-grupo">
+                        <th colspan="4" id="th-consolidado-titulo">Consolidado Mensal</th>
+                        <th colspan="10" class="divisor-secao">Acompanhamento Semanal (Real / Meta)</th>
+                    </tr>
+                    <tr>
+                        <th class="th-analista-header">
+                            <div class="th-analista-label">
+                                <span>Analista / Relatório</span>
+                            </div>
+                            <div class="busca-analista-wrapper">
+                                <input 
+                                    type="text" 
+                                    id="input-busca-analista" 
+                                    class="input-busca-analista" 
+                                    placeholder="🔍 Pesquisar analista..." 
+                                    oninput="filtrarPorAnalista(this.value)"
+                                    autocomplete="off"
+                                >
+                                <button type="button" id="btn-limpar-busca" class="btn-limpar-busca" onclick="limparBuscaAnalista()" title="Limpar pesquisa">✖</button>
+                            </div>
+                        </th>
+                        <th>Real</th>
+                        <th>Meta</th>
+                        <th class="th-perc">%</th>
+                        <th class="divisor-secao">Sem 1</th>
+                        <th class="th-perc">%</th>
+                        <th>Sem 2</th>
+                        <th class="th-perc">%</th>
+                        <th>Sem 3</th>
+                        <th class="th-perc">%</th>
+                        <th>Sem 4</th>
+                        <th class="th-perc">%</th>
+                        <th>Sem 5</th>
+                        <th class="th-perc">%</th>
+                    </tr>
+                </thead>
                 <tbody id="corpo-tabela">
                     <tr><td colspan="14" style="text-align: center; padding: 20px;">Buscando dados no servidor...</td></tr>
                 </tbody>
@@ -483,9 +580,10 @@
         let cacheBase = [];
         let cacheForms = [];
 
-        // Controle de quais analistas estão com a sanfona aberta
+        // Controle de quais analistas estão com a sanfona aberta e termo de pesquisa
         const expandidos = new Set();
         let todosExpandidos = false;
+        let termoBuscaAnalista = "";
 
         // Estado do filtro de data (Inicia no mês/ano atual)
         const hojeInicial = new Date();
@@ -548,6 +646,25 @@
             const offset = data.getDate() + diaDaSemanaInicio - 1;
             const numSemana = Math.floor(offset / 7) + 1;
             return Math.min(numSemana, 5);
+        }
+
+        // Filtra analistas conforme digitação no campo de busca
+        function filtrarPorAnalista(valor) {
+            termoBuscaAnalista = valor || "";
+            const btnLimpar = document.getElementById("btn-limpar-busca");
+            if (btnLimpar) {
+                btnLimpar.style.display = termoBuscaAnalista.trim().length > 0 ? "block" : "none";
+            }
+            renderizarDashboard();
+        }
+
+        function limparBuscaAnalista() {
+            const input = document.getElementById("input-busca-analista");
+            if (input) {
+                input.value = "";
+                input.focus();
+            }
+            filtrarPorAnalista("");
         }
 
         // Abre ou fecha os relatórios de um analista específico
@@ -719,6 +836,7 @@
 
             document.getElementById("badge-mes-exibido").innerText = `Exibindo: ${nomeMesSelecionado} de ${filtroAno}`;
             document.getElementById("kpi-periodo-txt").innerText = `Ref.: ${nomeMesSelecionado}/${filtroAno}`;
+            document.getElementById("th-consolidado-titulo").innerText = `Consolidado Mensal (${nomeMesSelecionado})`;
 
             // 1. Limpa cabeçalho da Base
             const baseLimpa = cacheBase.filter(r => {
@@ -738,7 +856,6 @@
 
             // Trava de segurança: se o mês virou e ainda não cadastraram o mês novo na coluna M da Base
             if (baseDoMes.length === 0 && baseLimpa.length > 0) {
-                // Descobre qual é o último mês preenchido na Base para usar como referência provisória
                 const mesesNaBase = [...new Set(baseLimpa.map(r => (r[12] || "").trim()).filter(Boolean))];
                 const ultimoMesCadastrado = mesesNaBase[mesesNaBase.length - 1] || "Geral";
                 
@@ -750,7 +867,7 @@
                 kpiMetaSub.innerText = `Ref. provisória: ${ultimoMesCadastrado}`;
             } else {
                 alertaEl.style.display = "none";
-                kpiMetaSub.innerText = `Meta de ${nomeMesSelecionado} (Col. M)`;
+                kpiMetaSub.innerText = `Meta de ${nomeMesSelecionado}`;
             }
             
             // 3. Filtra respostas do Forms para o Mês e Ano selecionados
@@ -759,8 +876,10 @@
                 return d && d.getMonth() === filtroMes && d.getFullYear() === filtroAno;
             });
 
-            // Extrai lista única de analistas presentes na Base daquele mês
-            const analistas = [...new Set(baseDoMes.map(r => r[0].trim()))].sort();
+            // 4. Extrai lista única de analistas e aplica o filtro de pesquisa por nome
+            const todosAnalistasMes = [...new Set(baseDoMes.map(r => r[0].trim()))].sort();
+            const buscaNorm = normalizarTexto(termoBuscaAnalista);
+            const analistas = todosAnalistasMes.filter(nome => normalizarTexto(nome).includes(buscaNorm));
 
             let corpoHTML = "";
             
@@ -782,8 +901,17 @@
                 };
             });
 
-            analistas.forEach((nome, index) => {
-                const chaveId = `analista_${index}`;
+            if (analistas.length === 0) {
+                corpoHTML = `
+                <tr>
+                    <td colspan="14" style="text-align: center; padding: 24px; color: #64748b;">
+                        Nenhum analista encontrado para "<b>${termoBuscaAnalista}</b>".
+                    </td>
+                </tr>`;
+            }
+
+            analistas.forEach(nome => {
+                const chaveId = `analista_${normalizarTexto(nome).replace(/[^a-z0-9]/g, '_')}`;
                 const estaAberto = expandidos.has(chaveId);
 
                 const baseA = baseDoMes.filter(r => r[0].trim() === nome);
@@ -893,42 +1021,20 @@
             document.getElementById("kpi-meta").innerText = formatNum(tEsp);
             document.getElementById("kpi-perc").innerText = formatarPerc(tReal, tEsp);
             document.getElementById("kpi-barra").style.width = `${Math.min(percGeralNum, 100)}%`;
-            document.getElementById("kpi-analistas").innerText = analistas.length;
+            document.getElementById("kpi-analistas").innerText = buscaNorm ? `${analistas.length} / ${todosAnalistasMes.length}` : analistas.length;
             document.getElementById("kpi-analistas-100").innerText = `${analistasMetaBatida} com 100% da meta`;
-
-            // Montagem do Cabeçalho Enxuto (14 Colunas)
-            const cabecalhoHTML = `
-                <tr class="linha-grupo">
-                    <th colspan="4">Consolidado Mensal (${nomeMesSelecionado})</th>
-                    <th colspan="10" class="divisor-secao">Acompanhamento Semanal (Real / Meta)</th>
-                </tr>
-                <tr>
-                    <th style="text-align: left; min-width: 240px;">Analista / Relatório</th>
-                    <th>Real</th>
-                    <th>Meta</th>
-                    <th class="th-perc">%</th>
-                    <th class="divisor-secao">Sem 1</th>
-                    <th class="th-perc">%</th>
-                    <th>Sem 2</th>
-                    <th class="th-perc">%</th>
-                    <th>Sem 3</th>
-                    <th class="th-perc">%</th>
-                    <th>Sem 4</th>
-                    <th class="th-perc">%</th>
-                    <th>Sem 5</th>
-                    <th class="th-perc">%</th>
-                </tr>`;
 
             // Montagem do Rodapé (Clicável para ver os totais por relatório)
             const chaveRodape = "rodape_geral";
             const rodapeAberto = expandidos.has(chaveRodape);
+            const tituloRodape = buscaNorm ? "TOTAL (FILTRADO)" : "TOTAL GERAL";
 
             let rodapeHTML = `
-                <tr id="pai-${chaveRodape}" data-chave-id="${chaveRodape}" class="linha-rodape ${rodapeAberto ? 'aberta' : ''}" onclick="alternarAnalista('${chaveRodape}')" style="background-color: #004578; color: white; text-align: center; height: 38px; font-weight: bold; cursor: pointer;" title="Clique para ver o total da equipe por relatório">
+                <tr id="pai-${chaveRodape}" data-chave-id="${chaveRodape}" class="linha-rodape ${rodapeAberto ? 'aberta' : ''}" onclick="alternarAnalista('${chaveRodape}')" style="background-color: #004578; color: white; text-align: center; height: 38px; font-weight: bold; cursor: pointer;" title="Clique para ver o total por relatório">
                     <td style="text-align: left;">
                         <div class="nome-clicavel" style="color: white;">
                             <span class="icone-seta" style="color: #93c5fd;">▶</span>
-                            <span>TOTAL GERAL</span>
+                            <span>${tituloRodape}</span>
                         </div>
                     </td>
                     <td>${tReal}</td>
@@ -942,7 +1048,7 @@
             }
             rodapeHTML += `</tr>`;
 
-            // Sub-linhas do Rodapé (Totais de cada relatório na empresa)
+            // Sub-linhas do Rodapé (Totais de cada relatório)
             tiposRelatorio.forEach(rel => {
                 const dadosRel = totaisPorRelatorio[rel.id];
                 rodapeHTML += `
@@ -960,8 +1066,7 @@
                 rodapeHTML += `</tr>`;
             });
 
-            // Injetando no HTML
-            document.getElementById("cabecalho-tabela").innerHTML = cabecalhoHTML;
+            // Injetando no HTML (Cabeçalho permanece fixo para não perder o foco do input)
             document.getElementById("corpo-tabela").innerHTML = corpoHTML;
             document.getElementById("rodape-tabela").innerHTML = rodapeHTML;
         }
