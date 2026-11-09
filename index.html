@@ -642,7 +642,8 @@
 
         function getSemanaDoMes(data) {
             const primeiroDia = new Date(data.getFullYear(), data.getMonth(), 1);
-            const diaDaSemanaInicio = (primeiroDia.getDay() + 6) % 7; // Segunda = 0, Domingo = 6
+            // Ao utilizar o getDay() nativo, Domingo já corresponde a 0 e Sábado a 6.
+            const diaDaSemanaInicio = primeiroDia.getDay(); 
             const offset = data.getDate() + diaDaSemanaInicio - 1;
             const numSemana = Math.floor(offset / 7) + 1;
             return Math.min(numSemana, 5);
@@ -817,7 +818,7 @@
                 const agora = new Date();
                 const dataFormatada = agora.toLocaleDateString('pt-BR');
                 const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                document.getElementById("texto-atualizacao").innerText = `Última atualização: ${dataFormatada} às ${horaFormatada} • Atualização automática a cada 30 min`;
+                document.getElementById("texto-atualizacao").innerText = `Última atualização: ${dataFormatada} às ${horaFormatada} - Atualização automática a cada 30 min`;
                 document.getElementById("texto-atualizacao").style.color = "#666";
 
             } catch (error) {
@@ -1073,7 +1074,7 @@
 
         // --- GATILHOS DE ATUALIZAÇÃO ---
         carregarDados();
-        setInterval(carregarDados, 30 * 60 * 1000);
+        setInterval(carregarDados, 30 * 60 * 1000); // 30 minutos em milissegundos
     </script>
 </body>
 </html>
